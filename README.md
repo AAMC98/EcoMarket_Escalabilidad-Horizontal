@@ -75,5 +75,3 @@ Consideraciones y mejoras
 - Persistencia de contadores en `estadisticas_consumer.py` (usar Redis o SQLite).
 - Reintentos con backoff en lugar de nack inmediato para errores transitorios.
 - Uso de colas temporales (exclusive) si prefieres que cada instancia de servicio tenga su propia cola.
-
-Si quieres, integro la publicación directamente en el endpoint de creación de usuarios existente (indícame el archivo/endpoint). Actualmente `user_publisher.py` es independiente para facilitar pruebas.

@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoMarket - Dashboard Central</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .eco-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+        .product-card {
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+        }
+        .low-stock { border-left: 4px solid #dc3545; }
+        .medium-stock { border-left: 4px solid #ffc107; }
+        .high-stock { border-left: 4px solid #28a745; }
+        
+        /* Estilos para badges de stock de sucursal */
+        .badge-warning {
+            background-color: #ffc107 !important;
+            color: #212529 !important;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .badge-danger {
+            background-color: #dc3545 !important;
+            color: white !important;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .badge-light {
+            background-color: #f8f9fa !important;
+            color: #495057 !important;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Header -->
+    <div class="eco-header py-4 mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="bi bi-shop"></i> EcoMarket Central
+                    </h1>
+                    <p class="mb-0 opacity-75">Sistema de Gestión de Inventario</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-check-circle"></i> Operativo
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-box-seam fs-1 text-primary"></i>
+                        <h3 class="text-primary">{{ total_products }}</h3>
+                        <p class="text-muted">Total Productos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-stack fs-1 text-info"></i>
+                        <h3 class="text-info">{{ inventory | sum(attribute='stock') }}</h3>
+                        <p class="text-muted">Stock Total</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-bell fs-1 text-warning"></i>
+                        <h3 class="text-warning">{{ notifications | length }}</h3>
+                        <p class="text-muted">Notificaciones</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-currency-dollar fs-1 text-success"></i>
+                        <h3 class="text-success">${{ "%.2f" | format(inventory | sum(attribute='price')) }}</h3>
+                        <p class="text-muted">Valor Total</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventario -->
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-box text-primary"></i> Inventario Central
+                        </h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleInventoryView()" id="inventoryToggleBtn">
+                                <i class="bi bi-arrows-expand"></i> Expandir
+                            </button>
+                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                <i class="bi bi-plus-circle"></i> AGREGAR PRODUCTO
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Controles de paginación superior -->
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="form-label mb-0">Mostrar:</label>
+                                <select class="form-select form-select-sm" id="inventoryPageSize" style="width: auto;" onchange="updateInventoryPagination()">
+                                    <option value="5" selected>5</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="-1">Todos</option>
+                                </select>
+                                <span class="text-muted">productos por página</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="prevInventoryPage()" id="inventoryPrevBtn">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <span class="text-muted" id="inventoryPageInfo">Página 1 de 1</span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="nextInventoryPage()" id="inventoryNextBtn">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabla con scroll -->
+                        <div class="table-responsive" id="inventoryTableContainer" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>NOMBRE</th>
+                                        <th>PRECIO</th>
+                                        <th>STOCK</th>
+                                        <th>ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody">
+                                    {% for product in inventory %}
+                                    <tr class="inventory-row">
+                                        <td class="fw-bold">{{ product.id }}</td>
+                                        <td>{{ product.name }}</td>
+                                        <td class="text-success fw-bold">${{ "%.2f" | format(product.price) }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if product.stock < 20 %}bg-danger
+                                                {% elif product.stock < 50 %}bg-warning
+                                                {% else %}bg-success{% endif %}">
+                                                {{ product.stock }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1 edit-btn" data-product-id="{{ product.id }}" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger delete-btn" data-product-id="{{ product.id }}" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Info del pie -->
+                        <div class="card-footer text-muted small d-flex justify-content-between align-items-center">
+                            <span id="inventoryCountInfo">Mostrando 1-{{ [inventory|length, 5]|min }} de {{ inventory | length }} productos</span>
+                            <button class="btn btn-sm btn-outline-info" onclick="scrollToTopInventory()">
+                                <i class="bi bi-arrow-up"></i> Ir arriba
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notificaciones -->
+            <div class="col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-bell text-warning"></i> Notificaciones Recientes
+                        </h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleNotificationsView()" id="notificationsToggleBtn">
+                                <i class="bi bi-arrows-expand"></i>
+                            </button>
+                            {% if notifications|length > 3 %}
+                            <span class="badge bg-warning">{{ notifications|length }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Controles de notificaciones -->
+                        <div class="p-2 border-bottom" id="notificationsControls" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Total: {{ notifications|length }} notificaciones</small>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="showAllNotifications()">
+                                        <i class="bi bi-eye"></i> Ver todas
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="clearOldNotifications()">
+                                        <i class="bi bi-trash3"></i> Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenedor de notificaciones con scroll -->
+                        <div class="p-3" id="notificationsContainer" style="max-height: 400px; overflow-y: auto;">
+                            {% if notifications %}
+                                <div id="notificationsList">
+                                    {% for notification in notifications %}
+                                    <div class="notification-item d-flex align-items-start mb-3 pb-3 border-bottom {% if loop.index > 3 %}d-none{% endif %}">
+                                        <div class="me-3">
+                                            <i class="bi bi-cart-check-fill text-success fs-4"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1 text-success">Venta realizada</h6>
+                                                    <p class="mb-1 text-muted small">
+                                                        {{ notification.branch_id }} vendió {{ notification.quantity_sold }} unidades del producto ID {{ notification.product_id }}
+                                                    </p>
+                                                    <small class="text-muted">
+                                                        {{ notification.timestamp.strftime('%d/%m %H:%M') }}
+                                                    </small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <strong class="text-success">${{ "%.2f" | format(notification.sale_price) }}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if notifications|length > 3 %}
+                                <div class="text-center py-2 border-top" id="showMoreNotifications">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="showMoreNotifications()">
+                                        <i class="bi bi-chevron-down"></i> Ver más ({{ notifications|length - 3 }} restantes)
+                                    </button>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                                    <p class="mt-2">No hay notificaciones</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Botón para ir arriba en notificaciones -->
+                        <div class="card-footer text-center" id="notificationsFooter" style="display: none;">
+                            <button class="btn btn-sm btn-outline-info" onclick="scrollToTopNotifications()">
+                                <i class="bi bi-arrow-up"></i> Ir arriba
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventario de Sucursales -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-shop text-info"></i> Inventario Sucursal
+                            <span id="branchSelectedIndicator" class="badge bg-secondary ms-2" style="display: none; font-size: 0.75rem;">
+                                Sucursal 001
+                            </span>
+                        </h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="form-select form-select-sm" id="branchSelector" style="width: auto;" onchange="loadBranchInventory()">
+                                <option value="">Seleccionar sucursal...</option>
+                                <option value="sucursal-001">Sucursal 001</option>
+                                <option value="sucursal-002">Sucursal 002</option>
+                                <option value="sucursal-003">Sucursal 003</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-info" onclick="refreshBranchInventory()" id="refreshBranchBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Actualizar
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleBranchView()" id="branchToggleBtn">
+                                <i class="bi bi-arrows-expand"></i> Expandir
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="showConnectionStatus()">
+                                <i class="bi bi-wifi"></i> Estado Conexiones
+                            </button>
+                            <button class="btn btn-outline-success" onclick="syncAllBranches()">
+                                <i class="bi bi-arrow-repeat"></i> Sincronizar Todas
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Información de la sucursal seleccionada -->
+                        <div class="p-3 border-bottom bg-light" id="branchInfo" style="display: none;">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h6 class="mb-1" id="branchTitle">Sucursal seleccionada</h6>
+                                    <small class="text-muted" id="branchLastUpdate">Última actualización: --</small>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <span class="badge bg-success me-2" id="branchStatus">En línea</span>
+                                    <small class="text-muted">Total productos: <span id="branchProductCount">0</span></small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Controles de paginación para sucursales -->
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom" id="branchControls" style="display: none;">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="form-label mb-0">Mostrar:</label>
+                                <select class="form-select form-select-sm" id="branchPageSize" style="width: auto;" onchange="updateBranchPagination()">
+                                    <option value="5" selected>5</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="-1">Todos</option>
+                                </select>
+                                <span class="text-muted">productos por página</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-outline-info" onclick="prevBranchPage()" id="branchPrevBtn">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <span class="text-muted" id="branchPageInfo">Página 1 de 1</span>
+                                <button class="btn btn-sm btn-outline-info" onclick="nextBranchPage()" id="branchNextBtn">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabla de inventario de sucursal -->
+                        <div class="table-responsive" id="branchTableContainer">
+                            <div id="branchLoadingState" class="text-center py-5">
+                                <i class="bi bi-shop text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-3">Selecciona una sucursal para ver su inventario</p>
+                            </div>
+                            <table class="table table-sm mb-0" id="branchInventoryTable" style="display: none;">
+                                <thead style="background: #f8f9fa;">
+                                    <tr style="border-bottom: 2px solid #dee2e6;">
+                                        <th style="font-weight: 600; color: #495057; font-size: 0.875rem; padding: 12px 16px;">ID</th>
+                                        <th style="font-weight: 600; color: #495057; font-size: 0.875rem; padding: 12px 16px;">NOMBRE</th>
+                                        <th style="font-weight: 600; color: #495057; font-size: 0.875rem; padding: 12px 16px; text-align: center;">STOCK</th>
+                                        <th style="font-weight: 600; color: #495057; font-size: 0.875rem; padding: 12px 16px; text-align: center;">ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branchTableBody" style="font-size: 0.875rem;">
+                                    <!-- Contenido dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Info del pie para sucursales -->
+                        <div class="px-3 py-2" id="branchFooter" style="display: none; background: #f8f9fa; border-top: 1px solid #dee2e6; font-size: 0.875rem; color: #6c757d;">
+                            <span id="branchCountInfo">Mostrando 1-5 de 5 productos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar stock de sucursal -->
+    <div class="modal fade" id="editBranchStockModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil-square"></i> Editar Stock
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary" id="branchProductName">Producto</label>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-shop"></i> Sucursal: <span id="currentBranchName"></span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="branchStockInput" class="form-label">Nuevo Stock</label>
+                        <input type="number" class="form-control form-control-lg text-center" 
+                               id="branchStockInput" min="0" placeholder="0"
+                               onkeypress="if(event.key==='Enter') saveBranchStock()">
+                        <div class="form-text text-center">
+                            <i class="bi bi-info-circle"></i> Stock actual: <span id="currentStockValue" class="fw-bold">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveBranchStock()">
+                        <i class="bi bi-check-circle"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Agregar Producto -->
+    <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="addProductModalLabel">
+                        <i class="bi bi-plus-circle"></i> Agregar Nuevo Producto
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addProductForm">
+                        <div class="mb-3">
+                            <label for="productId" class="form-label">ID del Producto</label>
+                            <input type="number" class="form-control" id="productId" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productName" class="form-label">Nombre del Producto</label>
+                            <input type="text" class="form-control" id="productName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productPrice" class="form-label">Precio</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" class="form-control" id="productPrice" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productStock" class="form-label">Stock Inicial</label>
+                            <input type="number" class="form-control" id="productStock" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="addProduct()">
+                        <i class="bi bi-check-circle"></i> Agregar Producto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Producto -->
+    <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="editProductModalLabel">
+                        <i class="bi bi-pencil-square"></i> Editar Producto
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProductForm">
+                        <div class="mb-3">
+                            <label for="editProductId" class="form-label">ID del Producto</label>
+                            <input type="number" class="form-control" id="editProductId" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editProductName" class="form-label">Nombre del Producto</label>
+                            <input type="text" class="form-control" id="editProductName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editProductPrice" class="form-label">Precio</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" class="form-control" id="editProductPrice" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editProductStock" class="form-label">Stock</label>
+                            <input type="number" class="form-control" id="editProductStock" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" onclick="updateProduct()">
+                        <i class="bi bi-check-circle"></i> Actualizar Producto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación para Eliminar -->
+    <div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteProductModalLabel">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3">¿Estás seguro?</h6>
+                    <p class="text-muted mb-0">Esta acción no se puede deshacer.</p>
+                    <p class="fw-bold" id="deleteProductName">Producto a eliminar</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeleteProduct()">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh cada 30 segundos
+        const autoRefresh = setInterval(() => {
+            window.location.reload();
+        }, 30000);
+
+        // Función para agregar producto
+        async function addProduct() {
+            const productData = {
+                id: parseInt(document.getElementById('productId').value),
+                name: document.getElementById('productName').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                stock: parseInt(document.getElementById('productStock').value)
+            };
+
+            try {
+                const response = await fetch('/products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(productData)
+                });
+
+                if (response.ok) {
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
+                    modal.hide();
+                    
+                    // Limpiar formulario
+                    document.getElementById('addProductForm').reset();
+                    
+                    // Mostrar mensaje de éxito
+                    showNotification('Producto agregado exitosamente', 'success');
+                    
+                    // Recargar página después de un momento
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail || 'Error al agregar producto', 'error');
+                }
+            } catch (error) {
+                showNotification('Error de conexión', 'error');
+            }
+        }
+
+        // Variable global para almacenar el ID del producto a eliminar
+        let productToDelete = null;
+
+        // Variables para paginación del inventario
+        let currentInventoryPage = 1;
+        let inventoryPageSize = 5;
+        let totalInventoryItems = 0;
+        
+        // Variables para notificaciones
+        let notificationsExpanded = false;
+        let inventoryExpanded = false;
+        let branchExpanded = false;
+        
+        // Variables para paginación de sucursales
+        let currentBranchPage = 1;
+        let branchPageSize = 5;
+        let totalBranchItems = 0;
+        let currentBranchData = [];
+        let selectedBranch = '';
+
+        // Event listeners para botones de editar y eliminar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event listeners para botones de editar
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    editProduct(productId);
+                });
+            });
+
+            // Event listeners para botones de eliminar
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    deleteProduct(productId);
+                });
+            });
+            
+            // Inicializar paginación del inventario
+            totalInventoryItems = document.querySelectorAll('.inventory-row').length;
+            updateInventoryPagination();
+        });
+        
+        // Función para alternar vista expandida del inventario
+        function toggleInventoryView() {
+            const container = document.getElementById('inventoryTableContainer');
+            const toggleBtn = document.getElementById('inventoryToggleBtn');
+            
+            if (inventoryExpanded) {
+                container.style.maxHeight = '400px';
+                toggleBtn.innerHTML = '<i class="bi bi-arrows-expand"></i> Expandir';
+                inventoryExpanded = false;
+            } else {
+                container.style.maxHeight = '80vh';
+                toggleBtn.innerHTML = '<i class="bi bi-arrows-collapse"></i> Contraer';
+                inventoryExpanded = true;
+            }
+        }
+        
+        // Función para alternar vista expandida de notificaciones
+        function toggleNotificationsView() {
+            const container = document.getElementById('notificationsContainer');
+            const toggleBtn = document.getElementById('notificationsToggleBtn');
+            const controls = document.getElementById('notificationsControls');
+            const footer = document.getElementById('notificationsFooter');
+            
+            if (notificationsExpanded) {
+                container.style.maxHeight = '400px';
+                toggleBtn.innerHTML = '<i class="bi bi-arrows-expand"></i>';
+                controls.style.display = 'none';
+                footer.style.display = 'none';
+                notificationsExpanded = false;
+            } else {
+                container.style.maxHeight = '80vh';
+                toggleBtn.innerHTML = '<i class="bi bi-arrows-collapse"></i>';
+                controls.style.display = 'block';
+                footer.style.display = 'block';
+                notificationsExpanded = true;
+            }
+        }
+        
+        // Funciones de paginación del inventario
+        function updateInventoryPagination() {
+            inventoryPageSize = parseInt(document.getElementById('inventoryPageSize').value);
+            const rows = document.querySelectorAll('.inventory-row');
+            totalInventoryItems = rows.length;
+            
+            if (inventoryPageSize === -1) {
+                // Mostrar todos
+                rows.forEach(row => row.style.display = 'table-row');
+                document.getElementById('inventoryPageInfo').textContent = `Mostrando todos (${totalInventoryItems})`;
+                document.getElementById('inventoryPrevBtn').disabled = true;
+                document.getElementById('inventoryNextBtn').disabled = true;
+                document.getElementById('inventoryCountInfo').textContent = `Mostrando todos los ${totalInventoryItems} productos`;
+                return;
+            }
+            
+            const totalPages = Math.ceil(totalInventoryItems / inventoryPageSize);
+            const startIndex = (currentInventoryPage - 1) * inventoryPageSize;
+            const endIndex = startIndex + inventoryPageSize;
+            
+            rows.forEach((row, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    row.style.display = 'table-row';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('inventoryPageInfo').textContent = `Página ${currentInventoryPage} de ${totalPages}`;
+            document.getElementById('inventoryPrevBtn').disabled = currentInventoryPage === 1;
+            document.getElementById('inventoryNextBtn').disabled = currentInventoryPage === totalPages;
+            
+            const actualEndIndex = Math.min(endIndex, totalInventoryItems);
+            document.getElementById('inventoryCountInfo').textContent = `Mostrando ${startIndex + 1}-${actualEndIndex} de ${totalInventoryItems} productos`;
+        }
+        
+        function prevInventoryPage() {
+            if (currentInventoryPage > 1) {
+                currentInventoryPage--;
+                updateInventoryPagination();
+                scrollToTopInventory();
+            }
+        }
+        
+        function nextInventoryPage() {
+            const totalPages = Math.ceil(totalInventoryItems / inventoryPageSize);
+            if (currentInventoryPage < totalPages) {
+                currentInventoryPage++;
+                updateInventoryPagination();
+                scrollToTopInventory();
+            }
+        }
+        
+        function scrollToTopInventory() {
+            document.getElementById('inventoryTableContainer').scrollTop = 0;
+        }
+        
+        // Funciones para notificaciones
+        function showMoreNotifications() {
+            const hiddenNotifications = document.querySelectorAll('.notification-item.d-none');
+            hiddenNotifications.forEach(notification => {
+                notification.classList.remove('d-none');
+                notification.style.display = 'flex';
+            });
+            document.getElementById('showMoreNotifications').style.display = 'none';
+            document.getElementById('notificationsFooter').style.display = 'block';
+        }
+        
+        function showAllNotifications() {
+            showMoreNotifications();
+        }
+        
+        function clearOldNotifications() {
+            if (confirm('¿Estás seguro de que quieres limpiar las notificaciones antiguas?')) {
+                // Esta función podría enviar una petición al servidor para limpiar notificaciones
+                showNotification('Función de limpiar notificaciones en desarrollo', 'info');
+            }
+        }
+        
+        function scrollToTopNotifications() {
+            document.getElementById('notificationsContainer').scrollTop = 0;
+        }
+        
+        // ===== FUNCIONES PARA INVENTARIO DE SUCURSALES =====
+        
+        // URLs de las sucursales (configurables)
+        const branchApiUrls = {
+            'sucursal-001': 'http://localhost:8001',
+            'sucursal-002': 'http://localhost:8002', 
+            'sucursal-003': 'http://localhost:8003'
+        };
+        
+        // Función para cargar inventario de sucursal
+        async function loadBranchInventory() {
+            const branchSelect = document.getElementById('branchSelector');
+            selectedBranch = branchSelect.value;
+            
+            if (!selectedBranch) {
+                hideBranchInventory();
+                return;
+            }
+            
+            showBranchLoading();
+            
+            try {
+                const branchUrl = branchApiUrls[selectedBranch];
+                if (!branchUrl) {
+                    throw new Error('URL de sucursal no configurada');
+                }
+                
+                console.log('Cargando inventario de:', selectedBranch, 'URL:', branchUrl);
+                
+                // Llamada real a la API de la sucursal
+                const response = await fetch(`${branchUrl}/inventory`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Respuesta de error:', errorText);
+                    throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const responseText = await response.text();
+                    console.error('Respuesta no JSON:', responseText.substring(0, 200));
+                    throw new Error('La respuesta no es JSON válido');
+                }
+                
+                const inventoryData = await response.json();
+                currentBranchData = inventoryData;
+                totalBranchItems = currentBranchData.length;
+                
+                // Obtener información adicional de la sucursal
+                let branchInfo;
+                try {
+                    const infoResponse = await fetch(`${branchUrl}/api`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    branchInfo = infoResponse.ok ? await infoResponse.json() : {
+                        service: selectedBranch,
+                        status: 'unknown'
+                    };
+                } catch (infoError) {
+                    console.warn('No se pudo obtener info de la sucursal:', infoError);
+                    branchInfo = {
+                        service: selectedBranch,
+                        status: 'unknown'
+                    };
+                }
+                
+                const branchData = {
+                    name: getBranchDisplayName(selectedBranch),
+                    status: response.ok ? 'online' : 'offline',
+                    lastUpdate: new Date().toLocaleString(),
+                    data: inventoryData,
+                    info: branchInfo
+                };
+                
+                showBranchInventory(branchData);
+                updateBranchPagination();
+                
+            } catch (error) {
+                console.error('Error cargando inventario de sucursal:', error);
+                console.log('URL intentada:', `${branchApiUrls[selectedBranch]}/inventory`);
+                
+                // Información más detallada del error
+                let errorMessage = 'Error de conexión';
+                if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
+                    errorMessage = 'La sucursal está devolviendo HTML en lugar de JSON. Verifique que esté corriendo correctamente.';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'No se puede conectar con la sucursal. Verifique que esté corriendo en el puerto correcto.';
+                } else {
+                    errorMessage = error.message;
+                }
+                
+                showNotification(`Error al cargar inventario: ${errorMessage}`, 'error');
+                showOfflineBranchData();
+            }
+        }
+        
+        // Función para mostrar datos cuando la sucursal está offline
+        function showOfflineBranchData() {
+            const branchData = {
+                name: getBranchDisplayName(selectedBranch),
+                status: 'offline',
+                lastUpdate: 'No disponible',
+                data: [],
+                info: { service: selectedBranch, status: 'offline' }
+            };
+            
+            showBranchInventory(branchData);
+            document.getElementById('branchTableBody').innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center py-4">
+                        <i class="bi bi-wifi-off text-danger" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">Sucursal fuera de línea</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadBranchInventory()">
+                            <i class="bi bi-arrow-clockwise"></i> Reintentar conexión
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        function getBranchDisplayName(branchId) {
+            const names = {
+                'sucursal-001': 'Sucursal 001 - Centro',
+                'sucursal-002': 'Sucursal 002 - Norte', 
+                'sucursal-003': 'Sucursal 003 - Sur'
+            };
+            return names[branchId] || branchId;
+        }
+        
+        function showBranchLoading() {
+            document.getElementById('branchLoadingState').innerHTML = `
+                <div class="spinner-border text-info" role="status"></div>
+                <p class="text-muted mt-3">Conectando con ${getBranchDisplayName(selectedBranch)}...</p>
+            `;
+        }
+        
+        function hideBranchInventory() {
+            document.getElementById('branchInfo').style.display = 'none';
+            document.getElementById('branchControls').style.display = 'none';
+            document.getElementById('branchInventoryTable').style.display = 'none';
+            document.getElementById('branchFooter').style.display = 'none';
+            document.getElementById('branchLoadingState').style.display = 'block';
+            document.getElementById('branchLoadingState').innerHTML = `
+                <i class="bi bi-shop text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Selecciona una sucursal para ver su inventario</p>
+            `;
+        }
+        
+        function showBranchInventory(branchData) {
+            // Actualizar indicador de sucursal en el título
+            const branchIndicator = document.getElementById('branchSelectedIndicator');
+            const branchNames = {
+                'sucursal-001': 'Sucursal 001',
+                'sucursal-002': 'Sucursal 002', 
+                'sucursal-003': 'Sucursal 003'
+            };
+            
+            if (selectedBranch && branchNames[selectedBranch]) {
+                branchIndicator.textContent = branchNames[selectedBranch];
+                branchIndicator.style.display = 'inline-block';
+            } else {
+                branchIndicator.style.display = 'none';
+            }
+            
+            // Actualizar información de la sucursal
+            document.getElementById('branchTitle').textContent = branchData.name;
+            document.getElementById('branchLastUpdate').textContent = `Última actualización: ${branchData.lastUpdate}`;
+            document.getElementById('branchStatus').textContent = branchData.status === 'online' ? 'En línea' : 'Fuera de línea';
+            document.getElementById('branchStatus').className = `badge me-2 ${branchData.status === 'online' ? 'bg-success' : 'bg-danger'}`;
+            document.getElementById('branchProductCount').textContent = branchData.data.length;
+            
+            // Mostrar elementos
+            document.getElementById('branchInfo').style.display = 'block';
+            document.getElementById('branchControls').style.display = 'flex';
+            document.getElementById('branchInventoryTable').style.display = 'table';
+            document.getElementById('branchFooter').style.display = 'flex';
+            document.getElementById('branchLoadingState').style.display = 'none';
+            
+            // Renderizar tabla
+            renderBranchTable();
+        }
+        
+        function renderBranchTable() {
+            const tbody = document.getElementById('branchTableBody');
+            const pageSize = parseInt(document.getElementById('branchPageSize').value);
+            
+            let dataToShow = currentBranchData;
+            
+            if (pageSize !== -1) {
+                const startIndex = (currentBranchPage - 1) * pageSize;
+                const endIndex = startIndex + pageSize;
+                dataToShow = currentBranchData.slice(startIndex, endIndex);
+            }
+            
+            tbody.innerHTML = dataToShow.map(product => {
+                // Determinar el color del stock según el valor
+                let stockBadgeClass = '';
+                let stockValue = product.stock;
+                
+                if (stockValue === 0) {
+                    stockBadgeClass = 'badge-danger'; // Rojo para 0
+                } else if (stockValue <= 10) {
+                    stockBadgeClass = 'badge-warning'; // Amarillo para stock bajo
+                } else {
+                    stockBadgeClass = 'badge-light text-dark'; // Normal
+                }
+                
+                return `
+                    <tr style="border-bottom: 1px solid #f1f3f4;">
+                        <td style="padding: 12px 16px; color: #333;">${product.id}</td>
+                        <td style="padding: 12px 16px; color: #333;">${product.name}</td>
+                        <td style="padding: 12px 16px; text-align: center;">
+                            <span class="badge ${stockBadgeClass}" style="font-size: 0.75rem; padding: 4px 8px;">
+                                ${stockValue}
+                            </span>
+                        </td>
+                        <td style="padding: 12px 16px; text-align: center;">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editBranchProduct(${product.id})" title="Editar Stock" style="font-size: 0.75rem;">
+                                <i class="bi bi-pencil"></i> STOCK
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function getCentralProduct(productId) {
+            return currentProducts.find(p => p.id === productId);
+        }
+        
+        function getBranchDisplayName(branchId) {
+            const names = {
+                'sucursal-norte': 'Sucursal Norte',
+                'sucursal-sur': 'Sucursal Sur',
+                'sucursal-centro': 'Sucursal Centro'
+            };
+            return names[branchId] || branchId;
+        }
+        
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-GT', {
+                style: 'currency',
+                currency: 'GTQ'
+            }).format(amount);
+        }
+        
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('es-GT', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Función para verificar conexión con sucursal
+        async function checkBranchConnection(branchId) {
+            try {
+                const branchUrl = branchApiUrls[branchId];
+                const response = await fetch(`${branchUrl}/health`, {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+        
+        // Función para mostrar estado de conexiones
+        async function showConnectionStatus() {
+            showNotification('Verificando conexiones con sucursales...', 'info');
+            
+            const statuses = {};
+            for (const branchId of Object.keys(branchApiUrls)) {
+                statuses[branchId] = await checkBranchConnection(branchId);
+            }
+            
+            let message = 'ESTADO DE CONEXIONES:\\n';
+            Object.entries(statuses).forEach(([branchId, isOnline]) => {
+                message += `${getBranchDisplayName(branchId)}: ${isOnline ? '🟢 En línea' : '🔴 Sin conexión'}\\n`;
+            });
+            
+            console.log(message);
+            const onlineCount = Object.values(statuses).filter(status => status).length;
+            const totalCount = Object.keys(statuses).length;
+            
+            showNotification(`${onlineCount}/${totalCount} sucursales en línea (ver consola)`, 
+                           onlineCount === totalCount ? 'success' : 'warning');
+        }
+        
+        // Funciones de paginación para sucursales
+        function updateBranchPagination() {
+            branchPageSize = parseInt(document.getElementById('branchPageSize').value);
+            
+            if (branchPageSize === -1) {
+                document.getElementById('branchPageInfo').textContent = `Mostrando todos (${totalBranchItems})`;
+                document.getElementById('branchPrevBtn').disabled = true;
+                document.getElementById('branchNextBtn').disabled = true;
+                document.getElementById('branchCountInfo').textContent = `Mostrando 1-${totalBranchItems} de ${totalBranchItems} productos`;
+            } else {
+                const totalPages = Math.ceil(totalBranchItems / branchPageSize);
+                const startIndex = (currentBranchPage - 1) * branchPageSize;
+                const endIndex = Math.min(startIndex + branchPageSize, totalBranchItems);
+                
+                document.getElementById('branchPageInfo').textContent = `Página ${currentBranchPage} de ${totalPages}`;
+                document.getElementById('branchPrevBtn').disabled = currentBranchPage === 1;
+                document.getElementById('branchNextBtn').disabled = currentBranchPage === totalPages;
+                document.getElementById('branchCountInfo').textContent = `Mostrando ${startIndex + 1}-${endIndex} de ${totalBranchItems} productos`;
+            }
+            
+            renderBranchTable();
+        }
+        
+        function prevBranchPage() {
+            if (currentBranchPage > 1) {
+                currentBranchPage--;
+                updateBranchPagination();
+                scrollToTopBranch();
+            }
+        }
+        
+        function nextBranchPage() {
+            const totalPages = Math.ceil(totalBranchItems / branchPageSize);
+            if (currentBranchPage < totalPages) {
+                currentBranchPage++;
+                updateBranchPagination();
+                scrollToTopBranch();
+            }
+        }
+        
+        function scrollToTopBranch() {
+            document.getElementById('branchTableContainer').scrollTop = 0;
+        }
+        
+        function toggleBranchView() {
+            const container = document.getElementById('branchTableContainer');
+            const toggleBtn = document.getElementById('branchToggleBtn');
+            
+            if (branchExpanded) {
+                container.style.maxHeight = '400px';
+                toggleBtn.innerHTML = '<i class="bi bi-arrows-expand"></i> Expandir';
+                branchExpanded = false;
+            } else {
+                container.style.maxHeight = '80vh';
+                toggleBtn.innerHTML = '<i class="bi bi-arrows-collapse"></i> Contraer';
+                branchExpanded = true;
+            }
+        }
+        
+        // Funciones de acción para productos de sucursal
+        async function refreshBranchInventory() {
+            if (selectedBranch) {
+                showNotification('Actualizando inventario de sucursal...', 'info');
+                await loadBranchInventory();
+                showNotification('Inventario actualizado', 'success');
+            }
+        }
+        
+        async function syncProductFromBranch(productId) {
+            const product = currentBranchData.find(p => p.id === productId);
+            if (!product || !selectedBranch) return;
+            
+            try {
+                showNotification(`Sincronizando ${product.name} con central...`, 'info');
+                
+                // Crear o actualizar producto en central
+                const response = await fetch('/products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        stock: product.stock
+                    })
+                });
+                
+                if (response.ok) {
+                    showNotification('Producto sincronizado exitosamente', 'success');
+                    // Recargar datos para mostrar cambios
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    // Si el producto ya existe, intentar actualizar
+                    if (response.status === 400) {
+                        const updateResponse = await fetch(`/products/${product.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                id: product.id,
+                                name: product.name,
+                                price: product.price,
+                                stock: product.stock
+                            })
+                        });
+                        
+                        if (updateResponse.ok) {
+                            showNotification('Producto actualizado en central', 'success');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            throw new Error('Error al actualizar producto');
+                        }
+                    } else {
+                        throw new Error('Error al sincronizar producto');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error sincronizando producto:', error);
+                showNotification('Error al sincronizar producto', 'error');
+            }
+        }
+        
+        async function syncAllBranches() {
+            if (confirm('¿Estás seguro de que quieres sincronizar todas las sucursales? Esto puede tomar varios minutos.')) {
+                showNotification('Iniciando sincronización de todas las sucursales...', 'info');
+                
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (const branchId of Object.keys(branchApiUrls)) {
+                    try {
+                        const branchUrl = branchApiUrls[branchId];
+                        
+                        // Obtener inventario de la sucursal
+                        const response = await fetch(`${branchUrl}/inventory`);
+                        if (response.ok) {
+                            const inventory = await response.json();
+                            
+                            // Sincronizar cada producto
+                            for (const product of inventory) {
+                                try {
+                                    await syncSingleProduct(product);
+                                } catch (error) {
+                                    console.warn(`Error sincronizando producto ${product.id} de ${branchId}:`, error);
+                                }
+                            }
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    } catch (error) {
+                        console.error(`Error conectando con ${branchId}:`, error);
+                        errorCount++;
+                    }
+                }
+                
+                const message = `Sincronización completada: ${successCount} sucursales sincronizadas, ${errorCount} errores`;
+                showNotification(message, errorCount === 0 ? 'success' : 'warning');
+                
+                // Recargar inventario actual si hay uno seleccionado
+                if (selectedBranch) {
+                    setTimeout(() => {
+                        loadBranchInventory();
+                    }, 2000);
+                }
+            }
+        }
+        
+        async function syncSingleProduct(product) {
+            try {
+                const response = await fetch('/products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(product)
+                });
+                
+                if (!response.ok && response.status === 400) {
+                    // Producto existe, actualizar
+                    const updateResponse = await fetch(`/products/${product.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(product)
+                    });
+                    
+                    if (!updateResponse.ok) {
+                        throw new Error(`Error actualizando producto ${product.id}`);
+                    }
+                } else if (!response.ok) {
+                    throw new Error(`Error creando producto ${product.id}`);
+                }
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        // Variable para almacenar el producto que se está editando
+        let currentEditingProduct = null;
+        
+        function editBranchProduct(productId) {
+            const product = currentBranchData.find(p => p.id === productId);
+            if (!product || !selectedBranch) return;
+            
+            // Guardar referencia del producto que se está editando
+            currentEditingProduct = product;
+            
+            // Actualizar información en el modal
+            document.getElementById('branchProductName').textContent = product.name;
+            document.getElementById('currentBranchName').textContent = getBranchDisplayName(selectedBranch);
+            document.getElementById('currentStockValue').textContent = product.stock;
+            document.getElementById('branchStockInput').value = product.stock;
+            
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('editBranchStockModal'));
+            modal.show();
+            
+            // Enfocar el input después de que se abra el modal
+            setTimeout(() => {
+                document.getElementById('branchStockInput').focus();
+                document.getElementById('branchStockInput').select();
+            }, 300);
+        }
+        
+        async function saveBranchStock() {
+            if (!currentEditingProduct || !selectedBranch) return;
+            
+            const newStock = document.getElementById('branchStockInput').value;
+            
+            if (newStock === '' || isNaN(newStock) || parseInt(newStock) < 0) {
+                showNotification('Por favor ingrese un stock válido', 'error');
+                return;
+            }
+            
+            try {
+                const branchUrl = branchApiUrls[selectedBranch];
+                
+                const response = await fetch(`${branchUrl}/products/${currentEditingProduct.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        stock: parseInt(newStock)
+                    })
+                });
+                
+                if (response.ok) {
+                    showNotification('Stock actualizado exitosamente', 'success');
+                    
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editBranchStockModal'));
+                    modal.hide();
+                    
+                    // Recargar datos
+                    await loadBranchInventory();
+                } else {
+                    throw new Error('Error al actualizar stock');
+                }
+                
+            } catch (error) {
+                console.error('Error editando producto:', error);
+                showNotification('Error al actualizar stock en sucursal', 'error');
+            }
+        }
+        
+        async function viewProductDetails(productId) {
+            const product = currentBranchData.find(p => p.id === productId);
+            const centralProduct = getCentralProduct(productId);
+            
+            if (product) {
+                try {
+                    // Obtener información adicional de la sucursal
+                    const branchUrl = branchApiUrls[selectedBranch];
+                    const statsResponse = await fetch(`${branchUrl}/sales/stats`);
+                    const stats = statsResponse.ok ? await statsResponse.json() : null;
+                    
+                    const details = `
+DETALLES DEL PRODUCTO
+--------------------
+Producto: ${product.name}
+ID: ${product.id}
+Sucursal: ${getBranchDisplayName(selectedBranch)}
+Precio: $${product.price.toFixed(2)}
+Stock en sucursal: ${product.stock}
+${centralProduct ? `Stock en central: ${centralProduct.stock}` : 'No disponible en central'}
+
+ESTADÍSTICAS DE SUCURSAL
+${stats ? `
+Ventas totales: ${stats.total_sales}
+Ingresos totales: $${stats.total_revenue}
+Venta promedio: $${stats.average_sale}
+` : 'No disponibles'}
+                    `;
+                    alert(details); // En producción sería un modal más elegante
+                } catch (error) {
+                    const simpleDetails = `
+Producto: ${product.name}
+Sucursal: ${getBranchDisplayName(selectedBranch)}
+Stock: ${product.stock}
+Precio: $${product.price.toFixed(2)}
+                    `;
+                    alert(simpleDetails);
+                }
+            }
+        }
+        
+        function compareBranchToCentral() {
+            if (!selectedBranch || currentBranchData.length === 0) return;
+            
+            const differences = currentBranchData.map(product => {
+                const centralProduct = getCentralProduct(product.id);
+                return {
+                    product,
+                    central: centralProduct,
+                    stockDiff: centralProduct ? product.stock - centralProduct.stock : null,
+                    priceDiff: centralProduct ? product.price - centralProduct.price : null
+                };
+            });
+            
+            let report = `COMPARACIÓN ${getBranchDisplayName(selectedBranch)} vs CENTRAL\\n`;
+            report += '='.repeat(50) + '\\n\\n';
+            
+            differences.forEach(item => {
+                report += `${item.product.name}:\\n`;
+                report += `  Sucursal: ${item.product.stock} unidades\\n`;
+                if (item.central) {
+                    report += `  Central: ${item.central.stock} unidades\\n`;
+                    report += `  Diferencia: ${item.stockDiff > 0 ? '+' : ''}${item.stockDiff}\\n`;
+                } else {
+                    report += `  Central: No disponible\\n`;
+                }
+                report += '\\n';
+            });
+            
+            console.log(report);
+            showNotification('Comparación generada (ver consola para detalles)', 'info');
+        }
+
+        // Función para editar producto
+        async function editProduct(productId) {
+            try {
+                // Obtener datos del producto
+                const response = await fetch(`/products/${productId}`);
+                
+                if (response.ok) {
+                    const product = await response.json();
+                    
+                    // Llenar el formulario de edición
+                    document.getElementById('editProductId').value = product.id;
+                    document.getElementById('editProductName').value = product.name;
+                    document.getElementById('editProductPrice').value = product.price;
+                    document.getElementById('editProductStock').value = product.stock;
+                    
+                    // Mostrar modal de edición
+                    const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+                    modal.show();
+                } else {
+                    showNotification('Error al cargar producto', 'error');
+                }
+            } catch (error) {
+                showNotification('Error de conexión', 'error');
+            }
+        }
+
+        // Función para actualizar producto
+        async function updateProduct() {
+            const productId = document.getElementById('editProductId').value;
+            const productData = {
+                id: parseInt(productId),
+                name: document.getElementById('editProductName').value,
+                price: parseFloat(document.getElementById('editProductPrice').value),
+                stock: parseInt(document.getElementById('editProductStock').value)
+            };
+
+            try {
+                const response = await fetch(`/products/${productId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(productData)
+                });
+
+                if (response.ok) {
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editProductModal'));
+                    modal.hide();
+                    
+                    // Mostrar mensaje de éxito
+                    showNotification('Producto actualizado exitosamente', 'success');
+                    
+                    // Recargar página después de un momento
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail || 'Error al actualizar producto', 'error');
+                }
+            } catch (error) {
+                showNotification('Error de conexión', 'error');
+            }
+        }
+
+        // Función para mostrar modal de confirmación de eliminación
+        async function deleteProduct(productId) {
+            try {
+                // Obtener datos del producto para mostrar en la confirmación
+                const response = await fetch(`/products/${productId}`);
+                
+                if (response.ok) {
+                    const product = await response.json();
+                    productToDelete = productId;
+                    
+                    // Actualizar el nombre del producto en el modal
+                    document.getElementById('deleteProductName').textContent = product.name;
+                    
+                    // Mostrar modal de confirmación
+                    const modal = new bootstrap.Modal(document.getElementById('deleteProductModal'));
+                    modal.show();
+                } else {
+                    showNotification('Error al cargar producto', 'error');
+                }
+            } catch (error) {
+                showNotification('Error de conexión', 'error');
+            }
+        }
+
+        // Función para confirmar eliminación
+        async function confirmDeleteProduct() {
+            if (!productToDelete) return;
+            
+            try {
+                const response = await fetch(`/products/${productToDelete}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteProductModal'));
+                    modal.hide();
+                    
+                    showNotification('Producto eliminado exitosamente', 'success');
+                    
+                    // Limpiar variable
+                    productToDelete = null;
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail || 'Error al eliminar producto', 'error');
+                }
+            } catch (error) {
+                showNotification('Error de conexión', 'error');
+            }
+        }
+
+        // Función para mostrar notificaciones
+        function showNotification(message, type) {
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'error' ? 'alert-danger' : 'alert-info';
+            
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', alertHtml);
+            
+            // Auto-remove después de 3 segundos
+            setTimeout(() => {
+                const alert = document.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoMarket - Dashboard Sucursal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/ecomarket.css" rel="stylesheet">
+    <style>
+        .branch-header {
+            background: linear-gradient(135deg, #fd7e14, #ffc107);
+            color: white;
+        }
+        .stats-card {
+            transition: transform 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Header -->
+    <div class="branch-header py-4 shadow">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-1">
+                        <i class="bi bi-shop"></i> EcoMarket - Sucursal Dashboard
+                    </h1>
+                    <p class="mb-0 opacity-75">Gestión autónoma de inventario y ventas</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-wifi"></i> OPERATIVO AUTÓNOMO
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <!-- Estadísticas principales -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-box-seam fs-1 text-primary"></i>
+                        <h3 class="text-primary" id="inventory-count">0</h3>
+                        <p class="text-muted">Productos en Stock</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-receipt fs-1 text-success"></i>
+                        <h3 class="text-success" id="sales-count">0</h3>
+                        <p class="text-muted">Ventas Realizadas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-currency-dollar fs-1 text-warning"></i>
+                        <h3 class="text-warning" id="total-revenue">$0.00</h3>
+                        <p class="text-muted">Ingresos Totales</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-graph-up fs-1 text-info"></i>
+                        <h3 class="text-info" id="avg-sale">$0.00</h3>
+                        <p class="text-muted">Venta Promedio</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Inventario Local -->
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-box-seam"></i> Inventario Local
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Producto</th>
+                                        <th>Precio</th>
+                                        <th>Stock</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-table">
+                                    <!-- Se llena dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de acciones -->
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear"></i> Acciones Rápidas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#saleModal">
+                                <i class="bi bi-cash-coin"></i> Procesar Venta
+                            </button>
+                            <a href="/sales" class="btn btn-info">
+                                <i class="bi bi-list-ul"></i> Ver Historial
+                            </a>
+                            <a href="/sales/stats" class="btn btn-warning">
+                                <i class="bi bi-bar-chart"></i> Estadísticas
+                            </a>
+                            <button class="btn btn-secondary" onclick="refreshData()">
+                                <i class="bi bi-arrow-clockwise"></i> Actualizar
+                            </button>
+                        </div>
+                        <!-- Selector de método de notificación -->
+                        <div class="card shadow-sm mt-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-arrow-left-right"></i> Método de Notificación
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="/set-method">
+                                    <div class="mb-2">
+                                        <select class="form-select" name="method">
+                                            <option value="http" {% if notify_method == 'http' %}selected{% endif %}>HTTP Directo</option>
+                                            <option value="http_retry" {% if notify_method == 'http_retry' %}selected{% endif %}>HTTP con Reintentos</option>
+                                            <option value="http_backoff" {% if notify_method == 'http_backoff' %}selected{% endif %}>HTTP con Backoff</option>
+                                            <option value="rabbitmq" {% if notify_method == 'rabbitmq' %}selected{% endif %}>RabbitMQ</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-dark w-100 mt-2">
+                                        <i class="bi bi-check2-circle"></i> Cambiar Método
+                                    </button>
+                                </form>
+                                <div class="mt-2 text-muted">
+                                    <strong>Método actual:</strong> <span class="badge bg-info">{{ notify_method }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enlaces de API -->
+                <div class="card shadow-sm mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-link-45deg"></i> Enlaces de API
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/docs" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-book"></i> Documentación API
+                            </a>
+                            <a href="/inventory" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-download"></i> API Inventario
+                            </a>
+                            <a href="/sales" class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-receipt"></i> API Ventas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ventas Recientes -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> Ventas Recientes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>ID Venta</th>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Total</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sales-table">
+                                    <!-- Se llena dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para procesar venta -->
+    <div class="modal fade" id="saleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-cash-coin"></i> Procesar Nueva Venta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="saleForm">
+                        <div class="mb-3">
+                            <label for="productSelect" class="form-label">Producto</label>
+                            <select class="form-select" id="productSelect" required>
+                                <option value="">Seleccionar producto...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantityInput" class="form-label">Cantidad</label>
+                            <input type="number" class="form-control" id="quantityInput" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customerInfo" class="form-label">Información del cliente (opcional)</label>
+                            <input type="text" class="form-control" id="customerInfo" placeholder="Nombre o notas...">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="processSale()">
+                        <i class="bi bi-check-circle"></i> Procesar Venta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Funciones del dashboard de sucursal
+        let inventoryData = [];
+        let salesData = [];
+
+        async function loadInventory() {
+            try {
+                const response = await fetch('/inventory');
+                inventoryData = await response.json();
+                
+                const tableBody = document.getElementById('inventory-table');
+                const productSelect = document.getElementById('productSelect');
+                
+                tableBody.innerHTML = '';
+                productSelect.innerHTML = '<option value="">Seleccionar producto...</option>';
+                
+                document.getElementById('inventory-count').textContent = inventoryData.length;
+                
+                inventoryData.forEach(product => {
+                    // Tabla de inventario
+                    const stockStatus = product.stock > 10 ? 'success' : (product.stock > 0 ? 'warning' : 'danger');
+                    const stockText = product.stock > 10 ? 'En stock' : (product.stock > 0 ? 'Bajo stock' : 'Agotado');
+                    
+                    const row = `
+                        <tr>
+                            <td><strong>${product.id}</strong></td>
+                            <td>${product.name}</td>
+                            <td>$${product.price.toFixed(2)}</td>
+                            <td><span class="badge bg-${stockStatus}">${product.stock}</span></td>
+                            <td><span class="badge bg-${stockStatus}">${stockText}</span></td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                    
+                    // Select del modal
+                    if (product.stock > 0) {
+                        productSelect.innerHTML += `<option value="${product.id}">${product.name} - Stock: ${product.stock}</option>`;
+                    }
+                });
+            } catch (error) {
+                console.error('Error cargando inventario:', error);
+            }
+        }
+
+        async function loadSales() {
+            try {
+                const response = await fetch('/sales');
+                salesData = await response.json();
+                
+                const tableBody = document.getElementById('sales-table');
+                tableBody.innerHTML = '';
+                
+                document.getElementById('sales-count').textContent = salesData.length;
+                
+                // Mostrar últimas 5 ventas
+                const recentSales = salesData.slice(-5).reverse();
+                recentSales.forEach(sale => {
+                    const date = new Date(sale.timestamp).toLocaleString();
+                    const row = `
+                        <tr>
+                            <td><small>${sale.sale_id}</small></td>
+                            <td>${sale.product_name}</td>
+                            <td><span class="badge bg-info">${sale.quantity_sold}</span></td>
+                            <td><strong>$${sale.total_amount.toFixed(2)}</strong></td>
+                            <td><small>${date}</small></td>
+                            <td><span class="badge bg-success">${sale.status}</span></td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error cargando ventas:', error);
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/sales/stats');
+                const stats = await response.json();
+                
+                document.getElementById('total-revenue').textContent = `$${stats.total_revenue.toFixed(2)}`;
+                document.getElementById('avg-sale').textContent = `$${stats.average_sale.toFixed(2)}`;
+            } catch (error) {
+                console.error('Error cargando estadísticas:', error);
+            }
+        }
+
+        async function processSale() {
+            const productId = document.getElementById('productSelect').value;
+            const quantity = document.getElementById('quantityInput').value;
+            const customerInfo = document.getElementById('customerInfo').value;
+            
+            if (!productId || !quantity) {
+                alert('Por favor completa todos los campos requeridos');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/sales', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        product_id: parseInt(productId),
+                        quantity: parseInt(quantity),
+                        customer_info: customerInfo || null
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`¡Venta procesada exitosamente!\nID: ${result.sale_id}\nTotal: $${result.total_amount.toFixed(2)}`);
+                    
+                    // Cerrar modal y actualizar datos
+                    bootstrap.Modal.getInstance(document.getElementById('saleModal')).hide();
+                    document.getElementById('saleForm').reset();
+                    refreshData();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('Error procesando venta:', error);
+                alert('Error procesando la venta');
+            }
+        }
+
+        function refreshData() {
+            loadInventory();
+            loadSales();
+            loadStats();
+        }
+
+        // Cargar datos al inicio
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+            
+            // Auto-refresh cada 30 segundos
+            setInterval(refreshData, 30000);
+        });
+    </script>
+</body>
+</html>

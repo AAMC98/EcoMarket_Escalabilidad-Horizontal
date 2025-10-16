@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoMarket: Del Productor/Consumidor al Pub/Sub - Eventos que Conectan Servicios</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+        .phase {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .phase h2 {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .phase h2::before {
+            content: attr(data-icon);
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        .activity {
+            background: #e8f4fd;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .checkpoint {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .code-python {
+            background: #f0f0f0;
+            border-left: 4px solid #3572A5;
+        }
+        .code-csharp {
+            background: #f0f0f0;
+            border-left: 4px solid #9B4F96;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .tip {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .reflection {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .evolution-step {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            position: relative;
+        }
+        .evolution-step::after {
+            content: "↓";
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #e74c3c;
+        }
+        .evolution-step:last-child::after {
+            display: none;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            background: white;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .comparison-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .decision-matrix {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .ai-prompt {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .progress-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: #e9ecef;
+            margin: 0 5px;
+            border-radius: 5px;
+        }
+        .progress-item.active {
+            background: #e74c3c;
+            color: white;
+        }
+        .scenario-box {
+            background: #f0f8ff;
+            border: 1px solid #e74c3c;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .diagram {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+        .dual-lang {
+            display: flex;
+            gap: 20px;
+        }
+        .dual-lang > div {
+            flex: 1;
+        }
+        @media (max-width: 768px) {
+            .dual-lang {
+                flex-direction: column;
+            }
+        }
+    </style>
+	<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</head>
+<body>
+    <h1>EcoMarket: Del Productor/Consumidor al Pub/Sub - Eventos que Conectan Servicios</h1>
+    <p>De colas puntuales a arquitecturas basadas en eventos: Evoluciona tu sistema de usuarios con RabbitMQ Fanout Exchange</p>
+
+    <!-- Sección de Introducción -->
+    <section id="introduccion" style="background: #f0f8ff; border-radius: 10px; padding: 20px; margin: 20px 0;">
+        <h2>🎯 Al Final de Esta Semana, Serás Capaz De:</h2>
+        <div class="checkpoint">
+            <ul>
+                <li>✅ <strong>Implementar</strong> un publisher que emita eventos a RabbitMQ con exchange fanout</li>
+                <li>✅ <strong>Crear</strong> 2+ consumers independientes que reaccionen al mismo evento</li>
+                <li>✅ <strong>Demostrar</strong> desacoplamiento: agregar un consumer sin modificar el publisher</li>
+                <li>✅ <strong>Simular</strong> y recuperar de fallos de un consumer (prueba de caos)</li>
+                <li>✅ <strong>Justificar</strong> cuándo usar Pub/Sub vs colas punto-a-punto (con números)</li>
+                <li>✅ <strong>Diagramar</strong> el flujo de eventos en tu sistema distribuido</li>
+            </ul>
+        </div>
+
+        
+		<h2>📚 Lecturas / Estudio Independiente (Antes del Taller)</h2>
+<p>Prepara el terreno con estas lecturas (30-45 min):</p>
+<ul>
+    <li><a href="https://learn.microsoft.com/en-us/dotnet/architecture/microservices/multi-container-microservice-net-applications/integration-event-based-microservice-communications" target="_blank">"Implementing event-based communication between microservices" (Microsoft Docs)</a> – Enfócate en Pub/Sub con .NET y event bus.<grok-card data-id="24887d" data-type="citation_card"></grok-card></li>
+    <li><a href="https://medium.com/@hashirkhanps/mastering-event-driven-architecture-with-c-and-net-4c71214a1c03" target="_blank">"Mastering Event-Driven Architecture with C# and .NET" (Medium, 2025)</a> – Ejemplos prácticos con RabbitMQ.<grok-card data-id="2d2394" data-type="citation_card"></grok-card></li>
+    <li><a href="https://docs.dapr.io/developing-applications/building-blocks/pubsub/pubsub-overview/" target="_blank">Ejemplos de Pub/Sub en .NET (Dapr)</a> – Para ver código de referencia simple.<grok-card data-id="7c20d3" data-type="citation_card"></grok-card></li>
+</ul>
+
+        <h2>🛠️ Taller 4: Implementación de un Sistema de Eventos en EcoMarket</h2>
+        <p><strong>Instrucciones (4 horas):</strong> Evoluciona tu proyecto de Semana 3 (colas para ventas) agregando eventos para usuarios. Muestra ejemplos en Python (continuidad) y C# (exploración).</p>
+        <ol>
+            <li>Adapta el servicio de usuarios (de Taller 2) para que, al crear un usuario válido, publique un evento `UsuarioCreado` al bus (usa RabbitMQ de Taller 3).</li>
+            <li>Construye un servicio **NotificacionesService** que se suscriba al evento `UsuarioCreado` y envíe un email simulado (print o SMTP real).</li>
+            <li><strong>Opcional/Reto:</strong> Crea **EstadísticasService** para contar usuarios nuevos.</li>
+            <li>Verifica independencia: Agrega un suscriptor sin tocar el publisher.</li>
+        </ol>
+
+        <h3>Requisitos Técnicos Mínimos</h3>
+        <ul>
+            <li>Usa RabbitMQ (reutiliza setup de Taller 3).</li>
+            <li>Define contrato: Clase `UsuarioCreadoEvent` con Id, Nombre, Email (en C#) o dict equivalente (Python).</li>
+            <li>Suscriptores validan datos del evento.</li>
+            <li>Manejo de fallos: Reintentos o Dead-Letter Queue (DLQ).</li>
+        </ul>
+
+        <div class="tip">
+            <h3>🔧 ¿Por Qué RabbitMQ para Este Taller?</h3>
+            <p><strong>Para producción real, considera:</strong></p>
+            <ul>
+                <li><strong>RabbitMQ</strong>: ✅ Elegido aquí - fácil setup, buena documentación, gratis, ideal para aprender</li>
+                <li><strong>Kafka</strong>: Mejor para high-throughput (>100k eventos/seg), más complejo de configurar</li>
+                <li><strong>Azure Service Bus</strong>: Si ya estás en Azure, integración nativa con .NET</li>
+                <li><strong>Redis Pub/Sub</strong>: Más simple, pero sin persistencia (solo para pruebas ligeras)</li>
+            </ul>
+            <p><strong>Para aprender el patrón Pub/Sub, RabbitMQ es ideal ⭐</strong> - Balance perfecto entre funcionalidad y complejidad.</p>
+        </div>
+
+        <h3>📊 Esquema de Componentes Propuesto</h3>
+        <div class="diagrama">
+            <pre style="background: #f7f7f7; border: 1px solid #ccc; padding: 10px; overflow-x: auto; font-size: 0.9em;">
+			<div class="mermaid">
+%%{ init: { "flowchart": { "htmlLabels": true } } }%%
+graph LR
+  A["UsuarioService<br>(Publisher)"] -->|Publica UsuarioCreado| B["RabbitMQ<br>(Fanout Exchange)"]
+  B -->|Broadcast| C["NotificacionesService<br>(Subscriber)"]
+  B -->|Broadcast| D["EstadísticasService<br>(Subscriber Opcional)"]
+  style A fill:#e8f4fd
+  style B fill:#d1ecf1
+  style C fill:#e8f5e8
+  style D fill:#f8f0e8
+
+	</div>
+            </pre>
+            <p><em>Diagrama Mermaid: Publisher → Bus → Múltiples Suscriptores independientes.</em></p>
+        </div>
+
+        <h2>📋 Entrega y Evaluación (Hito 1 - 15%)</h2>
+        <ul>
+            <li><strong>Repositorio:</strong> Código con servicios (GitHub o similar).</li>
+            <li><strong>Diagrama:</strong> Flujo de eventos (extiende el de arriba).</li>
+            <li><strong>Informe breve (1-2 páginas):</strong>
+                <ul class="variants">
+                    <li>Justificación de Pub/Sub: Ventajas (desacoplamiento, escalabilidad) vs retos (eventual consistency).</li>
+                    <li>Desacoplamiento logrado: Ej. agregar suscriptor sin cambios en publisher.</li>
+                    <li>Mejoras futuras: Más eventos, versionado, monitoreo (e.g., con Prometheus).</li>
+                </ul>
+            </li>
+        </ul>
+        <div class="tip">
+            <strong>Tip para entrega:</strong> Incluye un README con comandos para correr (e.g., docker-compose up) y un video corto (1 min) de E2E: Crear usuario → Ver logs en suscriptores.
+        </div>
+
+        <h2>🤔 Cuestiones de Reflexión (Post-Taller)</h2>
+        <ol>
+            <li>¿Qué pasa si un suscriptor cae? ¿Cómo aseguras no perder eventos? (Persistencia en queues, DLQ, reintentos).</li>
+            <li>¿Cómo versionar eventos si agregas campos? (Backward compatibility, schemas con Avro/Protobuf).</li>
+            <li>¿Consideraciones de seguridad? (Autenticación en bus, validación de eventos, encriptación).</li>
+            <li>¿Cuándo evitar Pub/Sub? (Operaciones transaccionales síncronas, baja latencia crítica).</li>
+        </ol>
+        <p><strong>¡Ahora, salta al Journey de EcoMarket para la práctica guiada!</strong> <a href="#journey" style="color: #e74c3c; font-weight: bold;">Ir al Journey →</a></p>
+    </section>
+
+    <div id="journey"></div>
+
+    <div class="progress-bar">
+        <div class="progress-item active">🎯 Fase 0: El Problema Real</div>
+        <div class="progress-item">🔄 Fase 1: Evolución de Soluciones</div>
+        <div class="progress-item">💻 Fase 2: Implementando Pub/Sub</div>
+        <div class="progress-item">🧪 Fase 3: Validación</div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🎯">Fase 0: El Problema Real que Justifica Pub/Sub (30 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Entender por qué el Productor/Consumidor simple no escala para múltiples suscriptores. Justifica la complejidad de eventos con números del negocio.</p>
+
+        <h3>🪴 Escenario: Evoluciona tu Servicio de Usuarios (Integración con Semanas 1-3)</h3>
+        <p>Usa el servicio de registro de usuarios ya implementado (de Taller 1-2). Ahora, al crear un usuario, necesitas notificar a múltiples servicios (email, lealtad, analítica) sin acoplamiento síncrono.</p>
+
+        <div class="scenario-box">
+            <h4>📊 Datos Reales del Sistema Actual:</h4>
+            <ul>
+                <li><strong>Volumen:</strong> 100 registros de usuarios por hora en picos</li>
+                <li><strong>Suscriptores:</strong> 3 servicios (email, loyalty, analytics)</li>
+                <li><strong>Acoplamiento actual:</strong> Cada suscriptor consulta directamente el servicio de registro (HTTP síncrono, de Taller 2)</li>
+                <li><strong>Fallos:</strong> 5% de notificaciones fallan por sobrecarga</li>
+                <li><strong>Costo de oportunidad:</strong> $50 por usuario perdido en lealtad no activada</li>
+            </ul>
+        </div>
+
+        <div class="scenario-box">
+            <h4>📈 Diagrama: El Problema Actual con Acoplamiento</h4>
+			<div class="mermaid">
+%%{ init: { "flowchart": { "htmlLabels": true } } }%%
+graph LR
+  subgraph RegistroUsuario
+    RU[Registro Usuario]
+  end
+
+  subgraph Suscriptores
+    EmailService[Servicio Email]
+    LoyaltyService[Servicio Loyalty]
+  end
+
+  EmailService -- "HTTP POST (≤ 200 ms)" --> RU
+  RU -- "HTTP POST (≤ 200 ms)" --> LoyaltyService
+
+  RU -. "Si cae → timeout en Email, usuario no recibe bienvenida" .-> EmailService
+  RU -. "Si sobrecarga → ambos esperan 500 ms, 5 % fallos" .-> LoyaltyService
+
+  %% Estilos opcionales para visibilidad
+  style RU fill:#fefee0,stroke:#999,stroke-width:1px
+  style EmailService fill:#e8f4fd
+  style LoyaltyService fill:#e8f4fd
+  </div>
+			
+            <pre class="diagram">
+SITUACIÓN ACTUAL: HTTP SÍNCRONO A MÚLTIPLES SUSCRIPTORES
+┌─────────────┐    HTTP POST      ┌─────────────┐    HTTP POST      ┌─────────────┐
+│ Servicio    │ ───────────────── │ Registro    │ ───────────────── │ Servicio    │
+│ Email       │ ← 200ms →         │ Usuario     │ ← 200ms →         │ Loyalty     │
+└─────────────┘                   └─────────────┘                   └─────────────┘
+      │                                   │                               │
+      │ Si Registro cae:                  │ Si sobrecarga:                │
+      ├──X── Timeout en Email             │ ├──X── Email espera 500ms     │
+      ├──X── Usuario no recibe bienvenida │ ├──X── Loyalty espera 500ms   │
+      └──X── $50 perdido en engagement    │ └──X── 5% fallos = $250/hora  │
+
+COSTO REAL: 5% fallos × 800 usuarios/día × $50 = $2,000 perdidos/día
+ESCALAMIENTO: +1 suscriptor = +200ms latencia + 20% más carga en Registro
+            </pre>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ Los Síntomas del Dolor</h3>
+            <p><strong>Reporte del Gerente:</strong> "Los nuevos usuarios no reciben emails de bienvenida en un 15% de los casos, y el programa de lealtad no se activa automáticamente."</p>
+            <p><strong>Reporte Técnico:</strong> El servicio de registro se sobrecarga llamando a 3 endpoints HTTP por usuario, tardando 600ms en total.</p>
+            <p><strong>Impacto:</strong> 15% × 800 usuarios/día × $50 = $6,000 perdidos en engagement mensual.</p>
+        </div>
+
+        <div class="activity">
+            <h3>🧮 Actividad: Calculando el Costo de Acoplamiento</h3>
+            <p><strong>Objetivo:</strong> Cuantificar por qué necesitas desacoplamiento vía eventos.</p>
+            <ol>
+                <li><strong>Calcula:</strong> Con 5% fallos y 800 usuarios/día, ¿cuánto en engagement perdido al mes?</li>
+                <li><strong>Proyecta:</strong> Si agregas 2 suscriptores más, ¿cómo escala la latencia y fallos?</li>
+                <li><strong>Umbral:</strong> ¿A partir de qué costo mensual inviertes en Pub/Sub?</li>
+            </ol>
+            <p><strong>Meta:</strong> Justificar Pub/Sub con ROI concreto.</p>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt para IA: Análisis de Impacto de Acoplamiento</h4>
+            <pre>Ayúdame a analizar el impacto de acoplamiento síncrono en mi sistema de usuarios:
+
+Contexto:
+- Registros por día: 800
+- Valor por usuario activado: $50
+- Tasa de fallos actual: 5%
+- Suscriptores: 3 servicios (email, loyalty, analytics)
+- Latencia por llamada HTTP: 200ms
+
+Preguntas:
+1. ¿Cuál es el costo mensual de fallos en engagement?
+2. Si agrego 2 suscriptores, ¿cómo escala el problema?
+3. ¿A partir de qué punto el acoplamiento se vuelve crítico?
+4. ¿Qué costos ocultos (e.g., mantenimiento) estoy ignorando?
+
+Dame números y escenarios concretos.</pre>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint de Fase 0</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Criterio</th>
+                        <th>¿Cumple?</th>
+                        <th>Evidencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Calculé costo mensual de acoplamiento</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Número: $______ /mes</td>
+                    </tr>
+                    <tr>
+                        <td>Identifiqué umbral para Pub/Sub</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Si > $______, invierto en eventos</td>
+                    </tr>
+                    <tr>
+                        <td>Entiendo por qué colas punto-a-punto no escalan</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Explico 2 limitaciones</td>
+                    </tr>
+                    <tr>
+                        <td>Conecté con proyecto previo (ventas)</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Identifiqué patrón similar</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🔄">Fase 1: La Evolución Natural hacia Eventos (45 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Explora cómo el Productor/Consumidor evoluciona a Pub/Sub, entendiendo límites de cada paso.</p>
+
+        <h3>🚀 El Evolution Journey a Eventos</h3>
+        <p>No saltas directo a Pub/Sub. Evolucionas cuando el acoplamiento duele, extendiendo las colas de Taller 3.</p>
+
+        <div class="scenario-box">
+            <h4>🔄 Diagrama: Evolution Journey - De Punto-a-Punto a Eventos</h4>
+			
+            <pre class="diagram">
+PASO 1: HTTP SÍNCRONO MÚLTIPLES LLAMADAS
+┌─────────┐ ──HTTP→  ┌─────────┐ ──HTTP→  ┌─────────┐
+│Registro │           │ Email   │           │ Loyalty │
+└─────────┘           └─────────┘           └─────────┘
+    ↓ Problema: 600ms latencia + sobrecarga
+
+PASO 2: COLA PUNTO-A-PUNTO (De Taller 3)
+┌─────────┐ ──publish→ [Queue Email] ──consume→   ┌─────────┐
+│Registro │ ──publish→ [Queue Loyalty] ──consume→ ┌─────────┐
+└─────────┘                                         └─────────┘
+    ↓ Problema: Duplicación de queues + acoplamiento en routing
+
+PASO 3: PUB/SUB CON EXCHANGE FANOUT
+┌─────────┐ ──publish→ [Fanout Exchange]  ──bind→ [Queue Email]
+│Registro │              "user_events"     ──bind→ [Queue Loyalty]
+└─────────┘                                ──bind→ [Queue Analytics]
+    ↓ Solución: 1 publish → N consumers, desacoplado
+
+DECISIÓN: ¿Vale Pub/Sub por escalabilidad de suscriptores?
+          Si >3 suscriptores o crecimiento → Sí
+            </pre>
+        </div>
+
+        <div class="evolution-step">
+            <h4>Paso 1: HTTP Síncrono Múltiples (Actual)</h4>
+            <p><strong>Código:</strong> Llamadas secuenciales a 3 endpoints</p>
+            <p><strong>Funciona cuando:</strong> Pocos suscriptores, red perfecta</p>
+            <p><strong>Falla cuando:</strong> Sobrecarga, latencia acumulada</p>
+        </div>
+
+        <div class="evolution-step">
+            <h4>Paso 2: Colas Punto-a-Punto (Taller 3)</h4>
+            <p><strong>Código:</strong> Publish separado por queue</p>
+            <p><strong>Funciona cuando:</strong> 2-3 suscriptores fijos</p>
+            <p><strong>Falla cuando:</strong> Agregar suscriptor = nueva queue + código</p>
+        </div>
+
+        <div class="evolution-step">
+            <h4>Paso 3: Pub/Sub con Fanout Exchange</h4>
+            <p><strong>Código:</strong> 1 publish a exchange, bindings automáticos</p>
+            <p><strong>Funciona cuando:</strong> Múltiples suscriptores dinámicos</p>
+            <p><strong>Nuevo costo:</strong> Gestión de exchanges/bindings</p>
+        </div>
+
+        <div class="activity">
+            <h3>🧪 Actividad: Implementando y Rompiendo Cada Paso</h3>
+            <p><strong>Objetivo:</strong> Probar límites extendiendo Taller 3.</p>
+
+            <h4>Paso 2A: Cola Punto-a-Punto (Extiende Taller 3, 15 min)</h4>
+            <div class="dual-lang">
+                <div>
+                    <h5>Ejemplo en Python</h5>
+                    <div class="code-block code-python">
+                        <pre># En Servicio Registro (extiende tu código de usuarios)
+import pika
+import json
+
+def publish_to_email_queue(user_data):
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
+    channel.queue_declare(queue='email_queue', durable=True)
+    channel.basic_publish(
+        exchange='',
+        routing_key='email_queue',
+        body=json.dumps(user_data),
+        properties=pika.BasicProperties(delivery_mode=2)
+    )
+    connection.close()
+
+def publish_to_loyalty_queue(user_data):
+    # Similar, pero queue='loyalty_queue'
+    pass  # Duplicación de código</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Ejemplo en C# (Exploración)</h5>
+                    <div class="code-block code-csharp">
+                        <pre>// En UsuarioService (extiende tu proyecto Semana 2)
+using RabbitMQ.Client;
+using System.Text;
+using System.Text.Json;
+
+public void PublishToEmailQueue(UserData userData)
+{
+    var factory = new ConnectionFactory { HostName = "localhost" };
+    using var connection = factory.CreateConnection();
+    using var channel = connection.CreateModel();
+    
+    channel.QueueDeclare(queue: "email_queue", durable: true);
+    
+    var json = JsonSerializer.Serialize(userData);
+    var body = Encoding.UTF8.GetBytes(json);
+    
+    channel.BasicPublish(exchange: "", routingKey: "email_queue", basicProperties: null, body: body);
+}
+
+// Similar para loyalty_queue - Duplicación</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Prueba de ruptura:</strong> Agrega un 4to suscriptor. ¿Cuánto código nuevo?</p>
+
+            <div class="tip">
+                <h4>🤔 ¿Qué pasaría si...?</h4>
+                <p><strong>Escenario:</strong> Analytics se une tarde:</p>
+                <ul>
+                    <li>Crear nueva queue + método publish</li>
+                    <li>Modificar Registro → riesgo de regresión</li>
+                    <li>Acoplamiento: Registro conoce todas las queues</li>
+                </ul>
+            </div>
+
+            <h4>Paso 2B: Mejora con Routing Keys (10 min)</h4>
+            <div class="dual-lang">
+                <div>
+                    <h5>Ejemplo en Python</h5>
+                    <div class="code-block code-python">
+                        <pre># Direct Exchange con routing keys
+channel.exchange_declare(exchange='user_direct', exchange_type='direct')
+channel.basic_publish(
+    exchange='user_direct',
+    routing_key='user.created.email',  # Routing específico
+    body=json.dumps(user_data)
+)</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Ejemplo en C#</h5>
+                    <div class="code-block code-csharp">
+                        <pre>// Direct Exchange con routing keys
+channel.ExchangeDeclare("user_direct", ExchangeType.Direct);
+var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(userData));
+channel.BasicPublish("user_direct", "user.created.email", null, body);</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Prueba de ruptura:</strong> ¿Y si un suscriptor quiere múltiples eventos?</p>
+        </div>
+
+        <div class="decision-matrix">
+            <h3>📊 Matriz de Decisión: ¿Cuándo usar qué?</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Solución</th>
+                        <th>Complejidad</th>
+                        <th>Funciona hasta</th>
+                        <th>Falla cuando</th>
+                        <th>Costo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>HTTP Múltiples</strong></td>
+                        <td>Muy Baja</td>
+                        <td>2 suscriptores, bajo volumen</td>
+                        <td>3+ suscriptores</td>
+                        <td>Bajo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Colas Punto-a-Punto</strong></td>
+                        <td>Baja</td>
+                        <td>3 suscriptores fijos</td>
+                        <td>Agregar dinámicamente</td>
+                        <td>Bajo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pub/Sub Fanout</strong></td>
+                        <td>Media</td>
+                        <td>10+ suscriptores, eventos broadcast</td>
+                        <td>Routing selectivo complejo</td>
+                        <td>Medio</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Topic Exchange</strong></td>
+                        <td>Alta</td>
+                        <td>Eventos filtrados por tipo</td>
+                        <td>Sobreingeniería para simples</td>
+                        <td>Alto</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt para IA: Análisis de Alternativas Pub/Sub</h4>
+            <pre>Analiza alternativas para desacoplar suscriptores en EcoMarket:
+
+Contexto:
+- Eventos: UsuarioCreado (broadcast a 3+ servicios)
+- Volumen: 800/día, creciendo 3x
+- Tolerancia: <1% eventos perdidos
+- Equipo: 2 devs, RabbitMQ ya en uso
+
+Alternativas:
+1. Colas punto-a-punto
+2. Fanout Exchange (Pub/Sub simple)
+3. Topic Exchange (filtrado)
+4. Kafka (avanzado)
+
+Evalúa:
+- ¿Cumple actuales?
+- ¿Escala crecimiento?
+- Esfuerzo implementación?
+- Problemas operacionales?
+- ¿Cuándo migrar?
+
+Recomienda para AHORA y upgrade path.</pre>
+        </div>
+
+        <div class="reflection">
+            <h3>🤔 Momento de Decisión</h3>
+            <p><strong>Pregunta equipo:</strong> "¿En qué punto del journey estamos forzados a Pub/Sub?"</p>
+            <p><strong>Datos:</strong> Costo fallos $X/mes, tiempo impl., complejidad manejable, crecimiento.</p>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint de Fase 1</h3>
+            <ul>
+                <li>Implementé/probé 2 pasos previos</li>
+                <li>Entiendo límites de cada uno</li>
+                <li>Justificación cuantitativa para Pub/Sub</li>
+                <li>Explico por qué no es overkill</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="💻">Fase 2: Implementando Pub/Sub con Propósito (60 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Implementa Fanout Exchange sabiendo qué problema resuelve: Desacoplamiento para múltiples suscriptores. Usa RabbitMQ (de Taller 3). Ejemplos en Python y C# para continuidad y exploración.</p>
+
+        <div class="tip">
+            <h3>💡 Contexto</h3>
+            <p>Implementas Pub/Sub porque:</p>
+            <ul>
+                <li>1 publish → N consumers sin acoplamiento</li>
+                <li>Escalabilidad: Agregar suscriptores sin tocar publisher</li>
+                <li>Resiliencia: Fallo en un suscriptor no afecta otros</li>
+                <li>ROI: Reduce latencia 600ms → 50ms + $6k/mes saved</li>
+            </ul>
+        </div>
+
+        <div class="activity">
+            <h3>🎬 Demo Rápida (5 minutos - Hazlo AHORA)</h3>
+            <p><strong>Antes de entender todo el código, veamos que funciona:</strong></p>
+            
+            <ol>
+                <li>Inicia RabbitMQ: <code>docker-compose up -d</code> (o inicia el servicio local)</li>
+                <li>En terminal 1, corre: <code>python email_consumer_simple.py</code></li>
+                <li>En terminal 2, corre: <code>python loyalty_consumer_simple.py</code></li>
+                <li>En terminal 3, ejecuta:
+                    <div class="code-block">
+                        <pre>curl -X POST http://localhost:8000/users \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@eco.com", "name": "Juan"}'</pre>
+                    </div>
+                </li>
+                <li><strong>Observa:</strong> En ambos terminales verás los logs simultáneamente:
+                    <div class="code-block">
+                        <pre>Terminal 1: 📧 Enviando email a test@eco.com
+Terminal 2: 🎁 Activando lealtad para Juan</pre>
+                    </div>
+                </li>
+            </ol>
+            
+            <div class="checkpoint">
+                <p><strong>¡Acabas de ver Pub/Sub en acción!</strong> Un evento → múltiples reacciones independientes. Ahora entendamos el código...</p>
+            </div>
+        </div>
+
+        <h3>🗂️ Arquitectura con Eventos</h3>
+
+        <div class="scenario-box">
+            <h4>🎯 Diagrama: Arquitectura Pub/Sub - Justificada</h4>
+            <pre class="diagram">
+ARQUITECTURA CON PUB/SUB PARA EVENTOS DE USUARIOS
+
+┌─────────────────┐                 ┌──────────────────────────────┐
+│ SERVICIO        │                 │        RABBITMQ              │
+│ REGISTRO        │                 │                              │
+│                 │ ──publish────→  │  ┌──────────────────────┐    │
+│ 1. Usuario      │   (durable,     │  │ user_events      │        │
+│    creado local │    fanout)      │  │ (Fanout Exchange)│ ──bind──→ [Queue Email]
+│    (50ms)       │                 │  │ • Broadcast all  │        │
+│                 │                 │  │ • No routing     │ ──bind──→ [Queue Loyalty]
+│ 2. Evento       │                 │  │ • Durable        │        │
+│    inmediato    │                 │  └──────────────────────┘        │ ──bind──→ [Queue Analytics]
+│                 │                 │                              │
+└─────────────────┘                 └──────────────────────────────┘
+      │                                                              │
+      │ Garantía: Venta NUNCA falla                                  │
+      │ por problemas de red                                         │
+      │                                          ┌─────────────────────────┐
+      │                                          │    CENTRAL API          │
+      └───────────── DESACOPLAMIENTO ───────────│                         │
+                                                 │ 1. Consumer robusto     │
+                                                 │    • Idempotencia       │
+                                                 │    • Error handling     │
+                                                 │    • ACK explícito      │
+                                                 │                         │
+                                                 │ 2. Actualiza inventario │
+                                                 │    • Solo tras ACK      │
+                                                 │    • Log de auditoría   │
+                                                 │                         │
+                                                 │ 3. Escalable           │
+                                                 │    • Múltiples workers  │
+                                                 │    • Load balancing     │
+                                                 └─────────────────────────┘
+
+BENEFICIOS ESPECÍFICOS OBTENIDOS:
+✅ Tiempo venta: 3-5s → 50ms (95% mejora)
+✅ Disponibilidad: 98% → 99.9% (10x mejora)  
+✅ Pérdida mensajes: 2% → 0.01% (200x mejora)
+✅ Escalabilidad: 1 sucursal → N sucursales
+● Costo nuevo: Infraestructura + operación RabbitMQ
+            </pre>
+        </div>
+
+        <div class="activity">
+            <h3>🔄 Integración con tu Código de Semana 2</h3>
+            <p><strong>Si ya tienes este endpoint de usuarios (de Taller 2):</strong></p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Código Actual (Python)</h5>
+                    <div class="code-block code-python">
+                        <pre>@app.post("/users")
+async def create_user(user: UserCreate):
+    # Tu lógica actual de semana 2
+    new_user = save_user_to_db(user)
+    return {"user_id": new_user.id}</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Código Actual (C#)</h5>
+                    <div class="code-block code-csharp">
+                        <pre>[HttpPost]
+public IActionResult CreateUser([FromBody] UserCreateDto user)
+{
+    // Tu lógica actual de semana 2
+    var newUser = _userService.SaveUser(user);
+    return Ok(new { UserId = newUser.Id });
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Modifícalo así (solo 3 líneas nuevas):</strong></p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Con Eventos (Python)</h5>
+                    <div class="code-block code-python">
+                        <pre>@app.post("/users")
+async def create_user(user: UserCreate, background_tasks: BackgroundTasks):
+    new_user = save_user_to_db(user)
+    # ⬇️ NUEVA LÍNEA 1: Importa la función de eventos
+    from events import publish_user_created
+    # ⬇️ NUEVA LÍNEA 2: Publica el evento en background
+    background_tasks.add_task(
+        publish_user_created, 
+        {"user_id": new_user.id, "email": user.email}
+    )
+    return {"user_id": new_user.id}</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Con Eventos (C#)</h5>
+                    <div class="code-block code-csharp">
+                        <pre>[HttpPost]
+public IActionResult CreateUser([FromBody] UserCreateDto user)
+{
+    var newUser = _userService.SaveUser(user);
+    // ⬇️ NUEVA LÍNEA 1: Inyecta el publisher
+    var publisher = new UserEventPublisher();
+    // ⬇️ NUEVA LÍNEA 2: Publica el evento
+    publisher.PublishUserCreated(new UserData 
+    { 
+        Id = newUser.Id, 
+        Email = user.Email 
+    });
+    return Ok(new { UserId = newUser.Id });
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip">
+                <p><strong>Nota:</strong> El evento se publica en background, así que la respuesta HTTP es inmediata (50ms) independiente de cuántos suscriptores existan.</p>
+            </div>
+        </div>
+
+        <div class="activity">
+            <h3>🚀 Actividad: Implementación Progresiva en 3 Niveles</h3>
+            <p><strong>Objetivo:</strong> Construir desde lo simple a lo robusto, entendiendo cada capa.</p>
+
+            <h4>Nivel 1: Publisher Mínimo Viable (15 min)</h4>
+            <p><strong>Objetivo:</strong> Que funcione con lo esencial - ver el evento llegar</p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Python - Nivel 1 Simple</h5>
+                    <div class="code-block code-python">
+                        <pre>"""
+events.py - Publisher Simple (Nivel 1)
+"""
+import pika
+import json
+
+def publish_user_created_simple(user_data: dict):
+    """Lo mínimo para que funcione"""
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters('localhost')
+    )
+    channel = connection.channel()
+    
+    # Declarar exchange fanout
+    channel.exchange_declare(
+        exchange='user_events',
+        exchange_type='fanout',
+        durable=True
+    )
+    
+    # Publicar
+    channel.basic_publish(
+        exchange='user_events',
+        routing_key='',  # Ignorado en fanout
+        body=json.dumps(user_data)
+    )
+    
+    connection.close()
+    print(f"✅ Evento publicado: {user_data}")</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>C# - Nivel 1 Simple</h5>
+                    <div class="code-block code-csharp">
+                        <pre>/*
+UserEventPublisher.cs - Publisher Simple (Nivel 1)
+*/
+using RabbitMQ.Client;
+using System.Text;
+using System.Text.Json;
+
+public class UserEventPublisher
+{
+    public void PublishUserCreatedSimple(UserData userData)
+    {
+        var factory = new ConnectionFactory { HostName = "localhost" };
+        using var connection = factory.CreateConnection();
+        using var channel = connection.CreateModel();
+        
+        // Declarar exchange fanout
+        channel.ExchangeDeclare(
+            "user_events", 
+            ExchangeType.Fanout, 
+            durable: true
+        );
+        
+        // Publicar
+        var json = JsonSerializer.Serialize(userData);
+        var body = Encoding.UTF8.GetBytes(json);
+        channel.BasicPublish("user_events", "", null, body);
+        
+        Console.WriteLine($"✅ Evento publicado: {userData.Email}");
+    }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkpoint">
+                <p><strong>Prueba Nivel 1:</strong> Ejecuta el consumer y publisher. ¿Llega el mensaje? ✅ Siguiente nivel.</p>
+            </div>
+
+            <h4>Nivel 2: Agregar Persistencia y Metadata (15 min)</h4>
+            <p><strong>Objetivo:</strong> Que los mensajes sobrevivan reinicio de RabbitMQ</p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Python - Nivel 2 con Persistencia</h5>
+                    <div class="code-block code-python">
+                        <pre>"""
+events.py - Publisher con Persistencia (Nivel 2)
+"""
+import pika
+import json
+from datetime import datetime
+import uuid
+
+def publish_user_created_persistent(user_data: dict):
+    """Mensajes persisten reinicio de RabbitMQ"""
+    
+    # Agregar metadata
+    message = {
+        **user_data,
+        "event_type": "UsuarioCreado",
+        "event_id": str(uuid.uuid4()),
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters('localhost')
+    )
+    channel = connection.channel()
+    
+    channel.exchange_declare(
+        exchange='user_events',
+        exchange_type='fanout',
+        durable=True  # Exchange sobrevive reinicio
+    )
+    
+    channel.basic_publish(
+        exchange='user_events',
+        routing_key='',
+        body=json.dumps(message),
+        properties=pika.BasicProperties(
+            delivery_mode=2,  # ⬅️ NUEVO: Mensaje persistente
+            content_type='application/json'
+        )
+    )
+    
+    connection.close()
+    print(f"✅ Evento persistente: {message['event_id']}")</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>C# - Nivel 2 con Persistencia</h5>
+                    <div class="code-block code-csharp">
+                        <pre>/*
+UserEventPublisher.cs - Con Persistencia (Nivel 2)
+*/
+public void PublishUserCreatedPersistent(UserData userData)
+{
+    var message = new
+    {
+        userData.Id,
+        userData.Email,
+        EventType = "UsuarioCreado",
+        EventId = Guid.NewGuid().ToString(),
+        Timestamp = DateTime.UtcNow.ToString("O")
+    };
+    
+    var factory = new ConnectionFactory { HostName = "localhost" };
+    using var connection = factory.CreateConnection();
+    using var channel = connection.CreateModel();
+    
+    channel.ExchangeDeclare("user_events", ExchangeType.Fanout, durable: true);
+    
+    var json = JsonSerializer.Serialize(message);
+    var body = Encoding.UTF8.GetBytes(json);
+    
+    // ⬇️ NUEVO: Propiedades de persistencia
+    var properties = channel.CreateBasicProperties();
+    properties.Persistent = true;
+    properties.ContentType = "application/json";
+    
+    channel.BasicPublish("user_events", "", properties, body);
+    Console.WriteLine($"✅ Evento persistente: {message.EventId}");
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkpoint">
+                <p><strong>Prueba Nivel 2:</strong> Publica mensaje, detén RabbitMQ (<code>docker stop rabbitmq</code>), reinícialo. ¿El mensaje sigue ahí? ✅</p>
+            </div>
+
+            <h4>Nivel 3: Confirmaciones y Manejo de Errores (15 min)</h4>
+            <p><strong>Objetivo:</strong> Garantizar que RabbitMQ confirmó la recepción</p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Python - Nivel 3 Robusto</h5>
+                    <div class="code-block code-python">
+                        <pre>"""
+events.py - Publisher Robusto (Nivel 3)
+"""
+import pika
+import json
+from datetime import datetime
+import uuid
+import time
+
+def publish_user_created(user_data: dict, max_retries: int = 3):
+    """Publisher con confirmaciones y reintentos"""
+    
+    message = {
+        **user_data,
+        "event_type": "UsuarioCreado",
+        "event_id": str(uuid.uuid4()),
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    for attempt in range(max_retries):
+        try:
+            params = pika.ConnectionParameters(
+                'localhost',
+                credentials=pika.PlainCredentials('user', 'pass')
+            )
+            
+            with pika.BlockingConnection(params) as conn:
+                ch = conn.channel()
+                
+                ch.exchange_declare(
+                    exchange='user_events',
+                    exchange_type='fanout',
+                    durable=True,
+                    arguments={'alternate-exchange': 'dead_letters'}
+                )
+                
+                # ⬇️ NUEVO: Habilitar confirmaciones
+                ch.confirm_delivery()
+                
+                ch.basic_publish(
+                    exchange='user_events',
+                    routing_key='',
+                    body=json.dumps(message),
+                    properties=pika.BasicProperties(
+                        delivery_mode=2,
+                        content_type='application/json'
+                    ),
+                    mandatory=True  # ⬅️ NUEVO: Falla si no hay queues
+                )
+                
+                print(f"✅ Evento confirmado: {message['event_id']}")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Intento {attempt + 1}: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Backoff exponencial
+    
+    return False</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>C# - Nivel 3 Robusto</h5>
+                    <div class="code-block code-csharp">
+                        <pre>/*
+UserEventPublisher.cs - Robusto (Nivel 3)
+*/
+public void PublishUserCreated(UserData userData, int maxRetries = 3)
+{
+    var message = new
+    {
+        userData.Id,
+        userData.Email,
+        EventType = "UsuarioCreado",
+        EventId = Guid.NewGuid().ToString(),
+        Timestamp = DateTime.UtcNow.ToString("O")
+    };
+
+    for (int attempt = 0; attempt < maxRetries; attempt++)
+    {
+        try
+        {
+            var factory = new ConnectionFactory { HostName = "localhost" };
+            using var connection = factory.CreateConnection();
+            using var channel = connection.CreateModel();
+
+            // ⬇️ NUEVO: Habilitar confirmaciones
+            channel.ConfirmSelect();
+
+            channel.ExchangeDeclare(
+                "user_events", 
+                ExchangeType.Fanout, 
+                durable: true,
+                arguments: new Dictionary<string, object> 
+                { 
+                    { "alternate-exchange", "dead_letters" } 
+                }
+            );
+
+            var json = JsonSerializer.Serialize(message);
+            var body = Encoding.UTF8.GetBytes(json);
+            
+            var properties = channel.CreateBasicProperties();
+            properties.Persistent = true;
+            properties.ContentType = "application/json";
+
+            channel.BasicPublish("user_events", "", properties, body);
+            
+            // ⬇️ NUEVO: Esperar confirmación
+            channel.WaitForConfirmsOrDie(TimeSpan.FromSeconds(5));
+            
+            Console.WriteLine($"✅ Evento confirmado: {message.EventId}");
+            return;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"❌ Intento {attempt + 1}: {e.Message}");
+            if (attempt < maxRetries - 1) 
+                Thread.Sleep((int)Math.Pow(2, attempt) * 1000);
+        }
+    }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkpoint">
+                <p><strong>Prueba Nivel 3:</strong> Detén RabbitMQ antes de publicar. ¿Los reintentos funcionan? ¿Hay backoff exponencial? ✅</p>
+            </div>
+
+            <div class="tip">
+                <p><strong>¿Por qué 3 niveles?</strong> Cada nivel agrega garantías específicas. Para aprender, empieza simple y agrega complejidad cuando entiendas por qué la necesitas.</p>
+            </div>
+        </div>
+
+        <div class="activity">
+            <h3>📥 Consumers: Suscriptores Independientes (30 min)</h3>
+            <p><strong>Objetivo:</strong> Implementar 2 consumers simples (email y loyalty); analytics como reto.</p>
+
+            <h4>Consumer Email (Nuevo servicio)</h4>
+            <div class="dual-lang">
+                <div>
+                    <h5>Ejemplo en Python</h5>
+                    <div class="code-block code-python">
+                        <pre>"""
+email_consumer.py - Se suscribe a user_events
+"""
+import pika
+import json
+
+def process_user_created_email(ch, method, props, body):
+    message = json.loads(body)
+    if message.get('event_type') == 'UsuarioCreado':
+        print(f"📧 Enviando email a {message['email']}")
+        # Lógica email simple (print por ahora)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+    else:
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+def start_email_consumer():
+    params = pika.ConnectionParameters(
+        'localhost', 
+        credentials=pika.PlainCredentials('user', 'pass')
+    )
+    conn = pika.BlockingConnection(params)
+    ch = conn.channel()
+    ch.exchange_declare(
+        exchange='user_events', 
+        exchange_type='fanout', 
+        durable=True
+    )
+    
+    result = ch.queue_declare(queue='', exclusive=True)
+    queue_name = result.method.queue
+    
+    ch.queue_bind(exchange='user_events', queue=queue_name)
+    
+    ch.basic_qos(prefetch_count=1)
+    ch.basic_consume(
+        queue=queue_name, 
+        on_message_callback=process_user_created_email
+    )
+    print("🎧 Email consumer esperando...")
+    ch.start_consuming()
+
+if __name__ == "__main__":
+    start_email_consumer()</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Ejemplo en C#</h5>
+                    <div class="code-block code-csharp">
+                        <pre>/*
+EmailConsumer.cs - Se suscribe a user_events
+*/
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
+
+public class EmailConsumer
+{
+    public void Start()
+    {
+        var factory = new ConnectionFactory { HostName = "localhost" };
+        using var connection = factory.CreateConnection();
+        using var channel = connection.CreateModel();
+
+        channel.ExchangeDeclare(
+            "user_events", 
+            ExchangeType.Fanout, 
+            durable: true
+        );
+
+        var queueName = channel.QueueDeclare().QueueName;
+        channel.QueueBind(
+            queue: queueName, 
+            exchange: "user_events", 
+            routingKey: ""
+        );
+
+        Console.WriteLine(" [*] Waiting for events. To exit press CTRL+C");
+
+        var consumer = new EventingBasicConsumer(channel);
+        consumer.Received += (model, ea) =>
+        {
+            var body = ea.Body.ToArray();
+            var json = Encoding.UTF8.GetString(body);
+            var message = JsonSerializer.Deserialize<JsonElement>(json);
+            
+            if (message.GetProperty("event_type").GetString() == "UsuarioCreado")
+            {
+                var email = message.GetProperty("email").GetString();
+                Console.WriteLine($"📧 Enviando email a {email}");
+            }
+            channel.BasicAck(ea.DeliveryTag, false);
+        };
+        
+        channel.BasicConsume(
+            queue: queueName, 
+            autoAck: false, 
+            consumer: consumer
+        );
+
+        Console.ReadLine();
+    }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <h4>Consumer Loyalty (Similar)</h4>
+            <div class="dual-lang">
+                <div>
+                    <h5>Ejemplo en Python</h5>
+                    <div class="code-block code-python">
+                        <pre># loyalty_consumer.py
+# Copia estructura de email, cambia:
+def process_user_created_loyalty(ch, method, props, body):
+    message = json.loads(body)
+    if message.get('event_type') == 'UsuarioCreado':
+        print(f"🎁 Activando lealtad para {message.get('user_id')}")
+        ch.basic_ack(delivery_tag=method.delivery_tag)</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Ejemplo en C#</h5>
+                    <div class="code-block code-csharp">
+                        <pre>// Similar estructura, cambia en Received:
+if (message.GetProperty("event_type").GetString() == "UsuarioCreado")
+{
+    var userId = message.GetProperty("user_id").GetString();
+    Console.WriteLine($"🎁 Activando lealtad para {userId}");
+    channel.BasicAck(ea.DeliveryTag, false);
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Ejecuta:</strong> <code>python email_consumer.py &</code> y <code>python loyalty_consumer.py</code> (o corre las apps C#).</p>
+        </div>
+
+        <div class="tip">
+            <h4>🚀 Reto: Analytics Consumer y DLQ</h4>
+            <p>Implementa consumer que loggea; configura dead_letters exchange para eventos fallidos (reintentos >3).</p>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt para IA: Revisión Pub/Sub</h4>
+            <pre>Revisa mi impl. de Pub/Sub en RabbitMQ:
+
+Código: [pegar arriba]
+
+Contexto:
+- Eventos UsuarioCreado broadcast a 3 servicios
+- Volumen 800/día → 2400/día
+- <1% perdidos
+- Equipo pequeño
+
+Evalúa:
+1. ¿Garantiza entrega a todos suscriptores?
+2. ¿Qué si RabbitMQ reinicia con eventos pendientes?
+3. ¿Maneja duplicados en reconexiones?
+4. ¿Escala volumen?
+5. Problemas operacionales?
+6. Configs faltantes?
+
+Por problema: Por qué importante, manifestación prod, código fix.</pre>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint de Fase 2</h3>
+            <ul>
+                <li>RabbitMQ con Fanout configurado</li>
+                <li>Publisher usa exchange durable y confirmaciones</li>
+                <li>Consumers bind independientes, ACK manual</li>
+                <li>Integré con mi código de Semana 2</li>
+                <li>Explico configs (fanout=desacoplamiento, bindings=escalabilidad)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🧪">Fase 3: Validación y Pruebas de Desacoplamiento (30 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Demuestra que Pub/Sub resuelve acoplamiento del Fase 0, con E2E y fallos.</p>
+
+        <div class="activity">
+            <h3>🔥 Pruebas de Eventos Desacoplados</h3>
+            <p><strong>Objetivo:</strong> Verificar flujo E2E y resiliencia.</p>
+
+            <div class="scenario-box">
+                <h4>⚡ Diagrama: Flujo de Validación con Manejo de Errores</h4>
+                <div class="mermaid">
+%%{ init: { "flowchart": { "htmlLabels": true } } }%%
+graph TB
+    A[Publisher: Evento UsuarioCreado] -->|publish| B[RabbitMQ Exchange]
+    B -->|fanout| C[Queue Email]
+    B -->|fanout| D[Queue Loyalty]
+    C -->|consume| E[Email Service]
+    D -->|consume| F[Loyalty Service]
+    
+    E -->|ACK ✅| C
+    F -->|NACK + requeue ⚠️| D
+    
+    D -->|retry 1| F
+    D -->|retry 2| F
+    D -->|retry 3 failed| G[Dead Letter Queue]
+    
+    style G fill:#f9d0d0
+    style E fill:#d0f9d0
+    style F fill:#f9f0d0
+                </div>
+                <pre class="diagram">
+PRUEBA 1: BROADCAST DURANTE REINICIO
+┌─────────┐ publish     ┌─────────────┐ restart    ┌─────────────┐
+│Registro │ ────────→   │ RabbitMQ    │ ──────→    │ RabbitMQ    │
+│1 evento │             │ (fanout)    │            │ (recupera)  │
+└─────────┘             └─────────────┘            └─────────────┘
+                                  │                             │
+                                  ▼                             ▼
+                           [Evento en todas         [3 queues intactas]
+                            queues]                        │
+                                  │                        ▼
+                                  │                 ┌─────────┐ ┌─────────┐ ┌─────────┐
+                                  │                 │Email    │ │Loyalty  │ │Analytics│
+                                  │                 └─────────┘ └─────────┘ └─────────┘ ✅
+VALIDACIÓN: ¿Llegan 3 reacciones? 
+
+PRUEBA 2: RESILIENCIA SUSCRIPTOR (Fallo + DLQ)
+┌─────────┐ publish     ┌─────────────┐ consume    ┌─────────┐
+│Registro │ ────────→   │ RabbitMQ    │ ────────→  │Email    │
+└─────────┘             └─────────────┘             │ (crash)│ ❌
+                                  │                             │
+                                  ▼                             ▼
+                           [Evento en queue]            [Sin ACK = requeue → DLQ si >3]
+                                  │                             │
+                                  ▼                             ▼
+                           ┌─────────────┐                ┌─────────┐
+                           │ RabbitMQ    │ ────────→      │Email    │
+                           │ (requeue)   │                │(restart)│ ✅
+                           └─────────────┘                └─────────┘
+VALIDACIÓN: ¿Otros consumers no afectados? ¿DLQ captura fallos?
+
+RESULTADO: DESACOPLAMIENTO VALIDADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Broadcast garantizado   ✅ Suscriptores independientes
+✅ Recovery automático     ✅ Sin impacto en publisher
+✅ Escalabilidad probada   ✅ ROI: Latencia ↓95%
+                </pre>
+            </div>
+
+            <h4>Prueba 1: E2E Broadcast (10 min)</h4>
+            <ol>
+                <li>Inicia consumers: <code>python email_consumer.py &</code> y <code>python loyalty_consumer.py</code> (o apps C#)</li>
+                <li>Usa Postman/curl para POST /users: <code>curl -X POST http://localhost:8000/users -H "Content-Type: application/json" -d '{"email": "test@eco.com"}'</code></li>
+                <li><strong>Esperado:</strong> Logs en consumers: "📧 Enviando email" y "🎁 Activando lealtad"</li>
+            </ol>
+
+            <h4>Prueba 2: Fallo en Suscriptor + DLQ (10 min)</h4>
+            <ol>
+                <li>Inicia consumers</li>
+                <li>Publica evento con curl</li>
+                <li>Mata email_consumer (Ctrl+C) ANTES de ACK (agrega <code>sleep(10)</code> en process para simular lento)</li>
+                <li>Reinicia email_consumer</li>
+                <li><strong>Esperado:</strong> Loyalty procesa; Email reprocesa. Checa Management UI para DLQ si >3 fallos</li>
+            </ol>
+
+            <h4>Prueba 3: Agregar Consumer sin Tocar Publisher (10 min)</h4>
+            <div class="activity">
+                <p><strong>Objetivo:</strong> Demostrar desacoplamiento total.</p>
+                <ol>
+                    <li>Sin detener nada, crea <code>analytics_consumer.py</code> (copia email_consumer, cambia el mensaje)</li>
+                    <li>Ejecútalo: <code>python analytics_consumer.py</code></li>
+                    <li>Publica un nuevo usuario</li>
+                    <li><strong>Esperado:</strong> 3 consumers reaccionan (email, loyalty, analytics) sin haber modificado el publisher</li>
+                </ol>
+                <div class="checkpoint">
+                    <p><strong>¡Esto es desacoplamiento!</strong> El publisher no sabe cuántos ni quiénes consumen sus eventos.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="reflection">
+            <h3>📊 Métricas de Validación</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Métrica</th>
+                        <th>HTTP Acoplado</th>
+                        <th>Con Pub/Sub</th>
+                        <th>Mejora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Latencia por evento</td>
+                        <td>600ms (3 llamadas)</td>
+                        <td>50ms (1 publish)</td>
+                        <td>92% más rápido</td>
+                    </tr>
+                    <tr>
+                        <td>Disponibilidad</td>
+                        <td>95% (1 fallo afecta todos)</td>
+                        <td>99.9% (independiente)</td>
+                        <td>20x mejor</td>
+                    </tr>
+                    <tr>
+                        <td>Eventos perdidos</td>
+                        <td>5% por sobrecarga</td>
+                        <td><0.1%</td>
+                        <td>50x más confiable</td>
+                    </tr>
+                    <tr>
+                        <td>Esfuerzo agregar suscriptor</td>
+                        <td>Modificar publisher</td>
+                        <td>Solo bind queue</td>
+                        <td>10x más simple</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tip">
+            <h3>🎯 ROI Demostrado</h3>
+            <ul>
+                <li><strong>Antes:</strong> $2,000/día en fallos engagement</li>
+                <li><strong>Después:</strong> $0 perdidos, suscriptores escalan gratis</li>
+                <li><strong>Costo impl.:</strong> ~30 horas</li>
+                <li><strong>Payback:</strong> Primera semana de uso</li>
+            </ul>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint Final</h3>
+            <ul>
+                <li>Pruebas de caos pasaron</li>
+                <li>ROI cuantificado vs anterior</li>
+                <li>Demostré desacoplamiento agregando consumer</li>
+                <li>Entiendo nuevos problemas (e.g., event storming) y monitoreo</li>
+                <li>Plan para Hito 1: Integrar en sistema distribuido básico</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🚀">Reflexión Final: El Verdadero Aprendizaje</h2>
+        
+        <div class="reflection">
+            <h3>🤔 Preguntas Profundas</h3>
+            <ol>
+                <li><strong>Evolución:</strong> ¿Por qué paso a paso vs directo a eventos?</li>
+                <li><strong>Complejidad:</strong> ¿Cuándo Pub/Sub vale vs costo?</li>
+                <li><strong>Patrones:</strong> ¿Otros problemas en trabajo con este journey?</li>
+                <li><strong>Arquitectura:</strong> ¿Cambios si startup vs enterprise?</li>
+            </ol>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt Final: Síntesis</h4>
+            <pre>Sintetiza mi aprendizaje en decisiones arquitectónicas:
+
+Journey:
+1. Empecé: [HTTP acoplado]
+2. Problemas: [5% fallos, $X/mes]
+3. Alternativas: [punto-a-punto, fanout]
+4. Elegí: [Pub/Sub] por [razones]
+5. Impl. con: [garantías]
+6. Validé: [desacoplamiento]
+
+Reflexiones:
+1. Principios generales?
+2. Balance complejidad-beneficio?
+3. Preguntas pre-adopción?
+4. Comunicación a stakeholders?
+
+Framework reusable para futuras decisiones.</pre>
+        </div>
+        
+        <div class="decision-matrix">
+            <h4>📋 Framework Mental (Ejemplo):</h4>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Principio</th>
+                        <th>Pregunta Guía</th>
+                        <th>Ejemplo EcoMarket</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Cuantificar Acoplamiento</strong></td>
+                        <td>¿$X/mes por dependencias?</td>
+                        <td>$2k/día fallos → $60k/mes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Evaluar Desacoplamiento</strong></td>
+                        <td>¿Escala N suscriptores?</td>
+                        <td>Fanout OK now, Topic for filters</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Validar ROI</strong></td>
+                        <td>¿Payback <1 mes?</td>
+                        <td>Sí, latencia ↓92% paga impl.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Incremental</strong></td>
+                        <td>¿Probar PoC?</td>
+                        <td>Empecé con queues, evolucioné a fanout</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Medir Impacto</strong></td>
+                        <td>¿Cumple promesas?</td>
+                        <td>95% → 99.9% disponibilidad empírica</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><em>Transferible a: Notificaciones, audits, scaling DB, etc.</em></p>
+        </div>
+
+        <div class="tip">
+            <h3>🎓 Valor Real</h3>
+            <p>Aprendiste:</p>
+            <ul>
+                <li><strong>Metodología:</strong> Evolucionar arquitecturas incrementalmente</li>
+                <li><strong>Justificación:</strong> Cuantificar desacoplamiento con ROI</li>
+                <li><strong>Impl.:</strong> Pub/Sub con garantías de producción</li>
+                <li><strong>Validación:</strong> Probar independencia con casos reales</li>
+            </ul>
+            <p><strong>Para Hito 1:</strong> Integra este Pub/Sub en tu sistema distribuido básico.</p>
+        </div>
+    </div>
+
+    <p style="text-align: center; margin-top: 30px;">
+        🎉 ¡Felicitaciones! Ahora dominas Pub/Sub: No solo cómo, sino cuándo y por qué en sistemas distribuidos.
+    </p>
+</body>
+</html>

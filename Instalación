@@ -1,0 +1,11 @@
+# Crear entorno virtual
+python -m venv venv
+
+# Activar (Windows)
+venv\Scripts\activate
+
+# Activar (Mac/Linux)
+source venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt

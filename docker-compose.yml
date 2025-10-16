@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ecomarket-rabbit
+    environment:
+      RABBITMQ_DEFAULT_USER: ecomarket_user
+      RABBITMQ_DEFAULT_PASS: ecomarket_password
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - ecomarket-net
+
+  users_service:
+    build: .
+    image: ecomarket-users-service
+    container_name: users-service
+    command: python users_service.py
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecomarket-net
+
+  notificaciones_consumer:
+    build: .
+    image: ecomarket-notificaciones
+    container_name: notificaciones-consumer
+    command: python notificaciones_consumer.py
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecomarket-net
+
+  estadisticas_consumer:
+    build: .
+    image: ecomarket-estadisticas
+    container_name: estadisticas-consumer
+    command: python estadisticas_consumer.py
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecomarket-net
+
+networks:
+  ecomarket-net:
+    driver: bridge

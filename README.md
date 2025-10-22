@@ -36,25 +36,9 @@ Diagrama del flujo (Mermaid)
 
 ```mermaid
 flowchart LR
-  subgraph Publisher
-    USR[UsuarioService (Publisher)]
-  end
-
-  subgraph Bus[RabbitMQ (fanout exchange:user_events)]
-    EX[Exchange: user_events (fanout)]
-  end
-
-  subgraph Subscribers
-    NOT[NotificacionesService (Subscriber)]
-    EST[EstadisticasService (Subscriber)]
-  end
-
-  USR --> EX
-  EX --> NOT
-  EX --> EST
-
-  classDef service fill:#f9f,stroke:#333,stroke-width:1px;
-  class USR,NOT,EST service
+  UsuarioService -->|publishes| Exchange["user_events (fanout)"]
+  Exchange --> NotificacionesService
+  Exchange --> EstadisticasService
 ```
 
 Cómo probar (flujo E2E)

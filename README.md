@@ -32,6 +32,31 @@ Archivos principales
 - `notificaciones_consumer.py` — suscriptor que valida evento y simula envío de email; usa DLQ `notificaciones_user_dlq`.
 - `estadisticas_consumer.py` — suscriptor opcional que cuenta usuarios nuevos en memoria; usa DLQ `estadisticas_user_dlq`.
 
+Diagrama del flujo (Mermaid)
+
+```mermaid
+flowchart LR
+  subgraph Publisher
+    USR[UsuarioService (Publisher)]
+  end
+
+  subgraph Bus[RabbitMQ (fanout exchange:user_events)]
+    EX[Exchange: user_events (fanout)]
+  end
+
+  subgraph Subscribers
+    NOT[NotificacionesService (Subscriber)]
+    EST[EstadisticasService (Subscriber)]
+  end
+
+  USR --> EX
+  EX --> NOT
+  EX --> EST
+
+  classDef service fill:#f9f,stroke:#333,stroke-width:1px;
+  class USR,NOT,EST service
+```
+
 Cómo probar (flujo E2E)
 
 1) Levanta RabbitMQ (ver arriba)

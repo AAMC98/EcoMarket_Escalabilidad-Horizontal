@@ -74,10 +74,3 @@ python .\simulate_fail_publisher.py --count 3
 ```
 
 Observa: los mensajes serán reencolados a retry-queues con delays (5s, 30s, 120s). Si exceden retries, aparecerán en la `dead_letter_queue` y `dead_letter_consumer.py` los mostrará.
-
-Preguntas de revisión (para ti o para IA)
-
-1. ¿Garantiza entrega a todos los suscriptores? (ver nivel 3 y confirmaciones)
-2. ¿Qué ocurre si RabbitMQ se reinicia con mensajes pendientes? (persistencia de exchange/queues y delivery_mode)
-3. ¿Cómo manejar duplicados y asegurar idempotencia? (consumer debe ser idempotente)
-4. ¿Escala el enfoque para 3x volumen? (monitorización, prefetch, pool de consumidores)

@@ -159,10 +159,3 @@ Conclusión: el coste incremental esperado por añadir suscriptores es alto y ju
 3. Diseñar contrato de evento y estrategia de versionado (JSON Schema o Avro).
 4. Amortizar y comparar coste real vs pérdida actual para preparar business case y pedir presupuesto.
 
----
-
-Si quieres, hago lo siguiente ahora:
-- Generar una slide / imagen con los números clave para entregar al PO.
-- Añadir un pequeño PoC en el repo que muestre el cálculo y algunos scripts para simular carga y fallos.
-
-Dime qué prefieres y lo hago (p. ej. slides PDF, gráfico PNG, o scripts de simulación simples en Python).

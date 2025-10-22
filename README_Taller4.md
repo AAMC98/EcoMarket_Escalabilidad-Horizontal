@@ -127,6 +127,26 @@ $env:FAST_RETRY = $null
 Pruebas de fallos
 - Publicar un evento inválido (por ejemplo, sin email) y comprobar que el mensaje es rechazado y enviado a la DLQ.
 
+Auto-validación y script de demo rápida
+--------------------------------------
+
+Incluimos un script automatizado de validación para Fase 3 (`tests/fase3_runner.py`) que realiza las pruebas E2E descritas arriba. Para ejecutarlo manualmente:
+
+```powershell
+$env:PYTHONPATH = '.'; .\.venv311\Scripts\python.exe .\tests\fase3_runner.py
+```
+
+También hay un helper PowerShell `demo_quick.ps1` que arranca los 3 consumidores en nuevas ventanas (con `FAST_RETRY=1`) y ejecuta el test automatizado. Uso recomendado para grabar el video (desde la raíz del repo):
+
+```powershell
+# Ejecuta demo_quick y abre el management UI al final
+.\demo_quick.ps1 -OpenManagementUI
+# o solo
+.\demo_quick.ps1
+```
+
+El script es solo para facilitar la demo; no cambia código de producción.
+
 Consideraciones y mejoras
 - Persistencia de contadores en `estadisticas_consumer.py` (usar Redis o SQLite).
 - Reintentos con backoff en lugar de nack inmediato para errores transitorios.

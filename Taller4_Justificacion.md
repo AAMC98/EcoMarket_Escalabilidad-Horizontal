@@ -100,6 +100,4 @@ Incluye en tu repositorio:
 - `README.md` con pasos para ejecutar el demo (docker run de RabbitMQ, arrancar consumers y el servicio de usuarios). 
 - Este archivo (`Taller4_Justificacion.md`) y, opcionalmente, una captura o diagrama Mermaid del flujo pub/sub.
 
----
 
-Archivo preparado para adjuntar al repositorio como `Taller4_Justificacion.md`.

@@ -8,14 +8,11 @@ import uuid
 from datetime import datetime
 import time
 import pika
-
-
-def get_conn_params():
-    return pika.ConnectionParameters('localhost')
+from events import get_connection_params
 
 
 def publish_level1(user_data: dict):
-    conn = pika.BlockingConnection(get_conn_params())
+    conn = pika.BlockingConnection(get_connection_params())
     ch = conn.channel()
     ch.exchange_declare(exchange='user_events', exchange_type='fanout', durable=True)
     ch.basic_publish(exchange='user_events', routing_key='', body=json.dumps(user_data))
@@ -25,7 +22,7 @@ def publish_level1(user_data: dict):
 
 def publish_level2_persistent(user_data: dict):
     message = {**user_data, 'event_type': 'UsuarioCreado', 'event_id': str(uuid.uuid4()), 'timestamp': datetime.utcnow().isoformat()}
-    conn = pika.BlockingConnection(get_conn_params())
+    conn = pika.BlockingConnection(get_connection_params())
     ch = conn.channel()
     ch.exchange_declare(exchange='user_events', exchange_type='fanout', durable=True)
     ch.basic_publish(exchange='user_events', routing_key='', body=json.dumps(message), properties=pika.BasicProperties(delivery_mode=2, content_type='application/json'))
@@ -38,7 +35,7 @@ def publish_level3_confirm(user_data: dict, max_retries: int = 3):
     attempt = 0
     while attempt < max_retries:
         try:
-            conn = pika.BlockingConnection(get_conn_params())
+            conn = pika.BlockingConnection(get_connection_params())
             ch = conn.channel()
             ch.exchange_declare(exchange='user_events', exchange_type='fanout', durable=True)
             ch.confirm_delivery()

@@ -8,7 +8,7 @@ import os
 import pika
 import json
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -62,3 +62,37 @@ def publish_user_created(user_data: Dict[str, Any], max_retries: int = 3, backof
 
     logger.error("No se pudo publicar evento UsuarioCreado después de %d intentos", max_retries)
     return False
+
+
+def republish_to_retry_queue(queue_name: str, message: Dict[str, Any], headers: Optional[Dict[str, Any]] = None, delay_ms: int = 5000) -> None:
+    """Publica el mensaje en una retry-queue con TTL que dead-letters a la queue original.
+
+    retry queue name: {queue_name}.retry.{delay_ms}
+    La retry-queue tiene x-message-ttl = delay_ms y x-dead-letter-routing-key = queue_name
+    """
+    params = get_connection_params()
+    conn = pika.BlockingConnection(params)
+    ch = conn.channel()
+
+    retry_queue = f"{queue_name}.retry.{delay_ms}"
+    args = {
+        'x-dead-letter-exchange': '',
+        'x-dead-letter-routing-key': queue_name,
+        'x-message-ttl': delay_ms,
+    }
+    ch.queue_declare(queue=retry_queue, durable=True, arguments=args)
+
+    props = pika.BasicProperties(headers=headers or {}, delivery_mode=2, content_type='application/json')
+    ch.basic_publish(exchange='', routing_key=retry_queue, body=json.dumps(message), properties=props)
+    conn.close()
+
+
+def publish_to_dead_letters(message: Dict[str, Any], headers: Optional[Dict[str, Any]] = None) -> None:
+    """Publica un mensaje a la exchange `dead_letters` para inspección/operaciones manuales."""
+    params = get_connection_params()
+    conn = pika.BlockingConnection(params)
+    ch = conn.channel()
+    ch.exchange_declare(exchange='dead_letters', exchange_type='fanout', durable=True)
+    props = pika.BasicProperties(headers=headers or {}, delivery_mode=2, content_type='application/json')
+    ch.basic_publish(exchange='dead_letters', routing_key='', body=json.dumps(message), properties=props)
+    conn.close()

@@ -147,6 +147,39 @@ También hay un helper PowerShell `demo_quick.ps1` que arranca los 3 consumidore
 
 El script es solo para facilitar la demo; no cambia código de producción.
 
+Cómo validar rápidamente (script)
+--------------------------------
+
+Resumen de pasos (copiar/pegar en PowerShell desde la raíz del repo):
+
+1) Levantar RabbitMQ (si no está ya corriendo con puertos expuestos):
+
+```powershell
+docker run -d --rm --name ecomarket-rabbit \
+  -p 5672:5672 -p 15672:15672 \
+  -e RABBITMQ_DEFAULT_USER=ecomarket_user \
+  -e RABBITMQ_DEFAULT_PASS=ecomarket_password \
+  rabbitmq:3-management
+```
+
+2) Usar el helper para demo (arranca consumidores en nuevas ventanas y ejecuta las pruebas):
+
+```powershell
+# desde la raíz del repo
+.\scripts\demo_quick.ps1 -OpenManagementUI
+```
+
+3) Ejecutar manualmente el test automatizado (si prefieres no abrir ventanas):
+
+```powershell
+$env:PYTHONPATH = '.'; .\.venv311\Scripts\python.exe .\tests\fase3_runner.py
+```
+
+Notas:
+- `FAST_RETRY` se aplica en `demo_quick.ps1` para acelerar retries durante la demo; no usar en producción.
+- Abre http://localhost:15672 para ver el management UI (user: `ecomarket_user`, pass: `ecomarket_password`).
+- Si quieres repetir la demo limpias las queues desde la UI o con `rabbitmqctl purge_queue <queue>`.
+
 Consideraciones y mejoras
 - Persistencia de contadores en `estadisticas_consumer.py` (usar Redis o SQLite).
 - Reintentos con backoff en lugar de nack inmediato para errores transitorios.

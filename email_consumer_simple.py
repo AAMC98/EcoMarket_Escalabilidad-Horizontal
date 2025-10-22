@@ -5,10 +5,14 @@ Uso: python email_consumer_simple.py
 """
 import json
 import logging
-from events import get_connection_params
+from events import get_connection_params, republish_to_retry_queue, publish_to_dead_letters
 import pika
 
 logging.basicConfig(level=logging.INFO)
+
+
+MAX_RETRIES = 3
+RETRY_DELAYS_MS = [5000, 30000, 120000]  # 5s, 30s, 2min
 
 
 def process_user_created_email(ch, method, props, body):
@@ -21,23 +25,33 @@ def process_user_created_email(ch, method, props, body):
     if message.get('event_type') == 'UsuarioCreado' or 'email' in message:
         email = message.get('email')
         try:
-            logging.info(f"📧 Enviando email a {email}")
-            # Simular fallo aleatorio para prueba (podrías quitar esto en prod)
-            # Aquí iría la lógica real de envío (SMTP, provider API, etc.)
-            ch.basic_ack(delivery_tag=method.delivery_tag)
-        except Exception as e:
-            logging.error('Error enviando email: %s', e)
-            # Manejo de reintentos simple: usar header x-retries
             headers = props.headers or {}
             retries = int(headers.get('x-retries', 0))
-            if retries >= 3:
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+            # Simulación de fallo controlado para demos: si simulate_fail True y no llegamos a max retries
+            if message.get('simulate_fail') and retries < MAX_RETRIES:
+                raise RuntimeError('Simulated failure (email)')
+
+            logging.info(f"📧 Enviando email a {email}")
+            # Lógica real de envío aquí
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        except Exception as e:
+            logging.error('Error enviando email: %s', e)
+            headers = props.headers or {}
+            retries = int(headers.get('x-retries', 0))
+            if retries >= MAX_RETRIES:
+                logging.warning('Retries excedidos para mensaje; enviando a dead_letters')
+                publish_to_dead_letters(message, headers=headers)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
             else:
-                # Republishing con header incrementado
+                # Republish to retry queue with increasing delay
                 new_headers = dict(headers)
                 new_headers['x-retries'] = retries + 1
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-                # En un sistema real haríamos republish a la misma queue con delay
+                delay = RETRY_DELAYS_MS[min(retries, len(RETRY_DELAYS_MS)-1)]
+                republish_to_retry_queue('email_queue', message, headers=new_headers, delay_ms=delay)
+                logging.info('Re-publicado a retry-queue (delay %d ms) retries=%d', delay, retries+1)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
     else:
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 

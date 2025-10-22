@@ -45,6 +45,36 @@ Pruebas recomendadas (siguientes pasos)
 2. Nivel 3: forzar desconexión del broker y comprobar reintentos/backoff.
 3. Implementar DLQ y reintentos en consumers para errores transitorios.
 
+Demo de reintentos y DLQ
+
+1) Ejecuta setup_queues.py para crear las queues durables y DLQ:
+
+```powershell
+python .\setup_queues.py
+```
+
+2) Inicia el dead-letter consumer (para inspección):
+
+```powershell
+python .\dead_letter_consumer.py
+```
+
+3) Inicia los consumers:
+
+```powershell
+python .\email_consumer_simple.py
+python .\loyalty_consumer_simple.py
+python .\analytics_consumer.py
+```
+
+4) Publica mensajes que forcen fallo y activa el flujo de retry:
+
+```powershell
+python .\simulate_fail_publisher.py --count 3
+```
+
+Observa: los mensajes serán reencolados a retry-queues con delays (5s, 30s, 120s). Si exceden retries, aparecerán en la `dead_letter_queue` y `dead_letter_consumer.py` los mostrará.
+
 Preguntas de revisión (para ti o para IA)
 
 1. ¿Garantiza entrega a todos los suscriptores? (ver nivel 3 y confirmaciones)

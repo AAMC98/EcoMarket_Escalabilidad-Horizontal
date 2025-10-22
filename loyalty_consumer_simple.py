@@ -5,10 +5,14 @@ Uso: python loyalty_consumer_simple.py
 """
 import json
 import logging
-from events import get_connection_params
+from events import get_connection_params, republish_to_retry_queue, publish_to_dead_letters
 import pika
 
 logging.basicConfig(level=logging.INFO)
+
+
+MAX_RETRIES = 3
+RETRY_DELAYS_MS = [5000, 30000, 120000]
 
 
 def process_user_created_loyalty(ch, method, props, body):
@@ -21,6 +25,12 @@ def process_user_created_loyalty(ch, method, props, body):
     if message.get('event_type') == 'UsuarioCreado' or 'user_id' in message:
         user_id = message.get('user_id') or message.get('id')
         try:
+            headers = props.headers or {}
+            retries = int(headers.get('x-retries', 0))
+
+            if message.get('simulate_fail') and retries < MAX_RETRIES:
+                raise RuntimeError('Simulated failure (loyalty)')
+
             logging.info(f"🎁 Activando lealtad para {user_id}")
             # Lógica de activación aquí
             ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -28,11 +38,17 @@ def process_user_created_loyalty(ch, method, props, body):
             logging.error('Error activando lealtad: %s', e)
             headers = props.headers or {}
             retries = int(headers.get('x-retries', 0))
-            if retries >= 3:
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            if retries >= MAX_RETRIES:
+                logging.warning('Retries excedidos para mensaje; enviando a dead_letters')
+                publish_to_dead_letters(message, headers=headers)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
             else:
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-                # En producción, re-publish con delay/backoff y header x-retries
+                new_headers = dict(headers)
+                new_headers['x-retries'] = retries + 1
+                delay = RETRY_DELAYS_MS[min(retries, len(RETRY_DELAYS_MS)-1)]
+                republish_to_retry_queue('loyalty_queue', message, headers=new_headers, delay_ms=delay)
+                logging.info('Re-publicado a retry-queue (delay %d ms) retries=%d', delay, retries+1)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
     else:
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 

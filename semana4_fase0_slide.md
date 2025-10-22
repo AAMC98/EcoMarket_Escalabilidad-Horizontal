@@ -39,6 +39,3 @@ Resultado esperado
 - Reducir dependencia síncrona y latencia por usuario.
 - Reducir fallos y recuperar ingresos (el ROI de la migración se recupera en semanas si las pérdidas actuales son del orden calculado).
 
----
-
-Contacto: si quieres lo convierto en una slide PDF o imagen para compartir con el Product Owner.

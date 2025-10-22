@@ -20,9 +20,19 @@ def process_user_created_loyalty(ch, method, props, body):
 
     if message.get('event_type') == 'UsuarioCreado' or 'user_id' in message:
         user_id = message.get('user_id') or message.get('id')
-        logging.info(f"🎁 Activando lealtad para {user_id}")
-        # Lógica de activación aquí
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        try:
+            logging.info(f"🎁 Activando lealtad para {user_id}")
+            # Lógica de activación aquí
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+        except Exception as e:
+            logging.error('Error activando lealtad: %s', e)
+            headers = props.headers or {}
+            retries = int(headers.get('x-retries', 0))
+            if retries >= 3:
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            else:
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+                # En producción, re-publish con delay/backoff y header x-retries
     else:
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
@@ -34,15 +44,16 @@ def start_loyalty_consumer():
 
     ch.exchange_declare(exchange='user_events', exchange_type='fanout', durable=True)
 
-    result = ch.queue_declare(queue='', exclusive=True)
-    queue_name = result.method.queue
-
-    ch.queue_bind(exchange='user_events', queue=queue_name)
+    args = {
+        'x-dead-letter-exchange': 'dead_letters',
+    }
+    ch.queue_declare(queue='loyalty_queue', durable=True, arguments=args)
+    ch.queue_bind(exchange='user_events', queue='loyalty_queue')
 
     ch.basic_qos(prefetch_count=1)
-    ch.basic_consume(queue=queue_name, on_message_callback=process_user_created_loyalty)
+    ch.basic_consume(queue='loyalty_queue', on_message_callback=process_user_created_loyalty)
 
-    logging.info('🎧 Loyalty consumer esperando eventos en exchange user_events...')
+    logging.info('🎧 Loyalty consumer esperando en queue loyalty_queue...')
     ch.start_consuming()
 
 

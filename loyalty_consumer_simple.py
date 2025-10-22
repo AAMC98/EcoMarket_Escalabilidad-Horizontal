@@ -3,6 +3,7 @@ loyalty_consumer_simple.py
 Consumer simple que activa lealtad al recibir UsuarioCreado.
 Uso: python loyalty_consumer_simple.py
 """
+import os
 import json
 import logging
 from events import get_connection_params, republish_to_retry_queue, publish_to_dead_letters
@@ -12,7 +13,11 @@ logging.basicConfig(level=logging.INFO)
 
 
 MAX_RETRIES = 3
-RETRY_DELAYS_MS = [5000, 30000, 120000]
+# Support FAST_RETRY for demos: if FAST_RETRY=1 then use small delays (ms)
+if os.environ.get('FAST_RETRY', '') == '1':
+    RETRY_DELAYS_MS = [2000, 4000, 6000]
+else:
+    RETRY_DELAYS_MS = [5000, 30000, 120000]
 
 
 def process_user_created_loyalty(ch, method, props, body):

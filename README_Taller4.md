@@ -68,6 +68,62 @@ python .\user_publisher.py --nombre "Ana Perez" --email "ana@example.com"
 
 5) Observa las salidas en las consolas de los consumidores. El consumer de notificaciones mostrará la línea simulando el envío de email; el consumer de estadísticas incrementará su contador.
 
+Demo rápido (acelerar retries para la entrega y DLQ)
+-----------------------------------------------
+
+Si quieres demostrar el flujo completo retry → re-entrega → DLQ en segundos (útil para grabar un video), usa la variable de entorno `FAST_RETRY=1` al arrancar los consumidores. Esto no cambia la lógica de producción; solo reduce los TTL de retry para la demo.
+
+PowerShell — abre 3 terminales separadas:
+
+Terminal A — Email consumer (rápido)
+```powershell
+$env:FAST_RETRY = '1'
+.\.venv311\Scripts\python.exe .\email_consumer_simple.py
+```
+
+Terminal B — Loyalty consumer (rápido)
+```powershell
+$env:FAST_RETRY = '1'
+.\.venv311\Scripts\python.exe .\loyalty_consumer_simple.py
+```
+
+Terminal C — Analytics consumer
+```powershell
+.\.venv311\Scripts\python.exe .\analytics_consumer.py
+```
+
+Publica mensajes que simulan fallo (desde otra terminal):
+
+```powershell
+.\.venv311\Scripts\python.exe .\simulate_fail_publisher.py --count 3
+```
+
+Observa en las consolas de los consumidores las re-publicaciones a retry queues y, tras agotar `MAX_RETRIES`, el envío a `dead_letters`.
+
+Inspección rápida de colas (docker):
+
+```powershell
+docker ps
+docker exec -it ecomarket-rabbit rabbitmqctl list_queues name messages
+```
+
+UI management: http://localhost:15672 (user: `ecomarket_user`, pass: `ecomarket_password`) → pestaña Queues → revisa `email_queue`, `loyalty_queue`, `analytics_queue`, `dead_letter_queue` y las retry queues (`*.retry.*`).
+
+Forzar DLQ inmediatamente (opcional):
+
+```powershell
+.\.venv311\Scripts\python.exe -c "from events import get_connection_params; import pika, json; p=get_connection_params(); c=pika.BlockingConnection(p); ch=c.channel(); ch.exchange_declare(exchange='dead_letters',exchange_type='fanout',durable=True); ch.basic_publish(exchange='dead_letters',routing_key='',body=json.dumps({'force':'dlq_test'}),properties=pika.BasicProperties(delivery_mode=2)); c.close()"
+```
+
+Limpiar variable FAST_RETRY en PowerShell (opcional):
+
+```powershell
+# Quitar variable de entorno
+Remove-Item Env:FAST_RETRY
+# o
+$env:FAST_RETRY = $null
+```
+
 Pruebas de fallos
 - Publicar un evento inválido (por ejemplo, sin email) y comprobar que el mensaje es rechazado y enviado a la DLQ.
 

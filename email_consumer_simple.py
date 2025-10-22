@@ -3,6 +3,7 @@ email_consumer_simple.py
 Consumer simple que se bindea al exchange fanout `user_events` y procesa eventos UsuarioCreado.
 Uso: python email_consumer_simple.py
 """
+import os
 import json
 import logging
 from events import get_connection_params, republish_to_retry_queue, publish_to_dead_letters
@@ -12,7 +13,12 @@ logging.basicConfig(level=logging.INFO)
 
 
 MAX_RETRIES = 3
-RETRY_DELAYS_MS = [5000, 30000, 120000]  # 5s, 30s, 2min
+# Support FAST_RETRY for demos: if FAST_RETRY=1 then use small delays (ms)
+if os.environ.get('FAST_RETRY', '') == '1':
+    RETRY_DELAYS_MS = [2000, 4000, 6000]
+else:
+    # Default production-like delays
+    RETRY_DELAYS_MS = [5000, 30000, 120000]  # 5s, 30s, 2min
 
 
 def process_user_created_email(ch, method, props, body):

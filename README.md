@@ -8,8 +8,6 @@ Repositorio de entrega: https://github.com/AAMC98/EcoMarket_Escalabilidad-Horizo
 ---
 
 ## Informe breve (1–2 páginas) — Resumen para el docente
-
-````markdown
 # EcoMarket — Semana 6: Escalabilidad Horizontal y Balanceo de Carga
 
 Este repositorio contiene la entrega (avance) para la Semana 6 centrada en escalabilidad horizontal del `users_service` mediante Nginx como balanceador. El objetivo de la práctica fue mostrar que varias réplicas del servicio pueden atender tráfico en paralelo y publicar eventos a RabbitMQ sin downtime.
@@ -23,94 +21,70 @@ Repositorio de entrega: https://github.com/AAMC98/EcoMarket_Escalabilidad-Horizo
 ```mermaid
 flowchart LR
   Cliente[Cliente\n(Browser / Postman)] --> Nginx[Nginx\n(Load Balancer)\n(least_conn)]
-  # EcoMarket — Semana 6: Escalabilidad Horizontal y Balanceo de Carga
+  Nginx --> I1[Instancia 1\nPuerto 8000]
+  Nginx --> I2[Instancia 2\nPuerto 8001]
+  Nginx --> I3[Instancia 3\nPuerto 8002]
+```
 
-  Este repositorio contiene la entrega (avance) para la Semana 6 centrada en escalabilidad horizontal del `users_service` mediante Nginx como balanceador. El objetivo de la práctica fue mostrar que varias réplicas del servicio pueden atender tráfico en paralelo y publicar eventos a RabbitMQ sin downtime.
+---
 
-  Repositorio de entrega: https://github.com/AAMC98/EcoMarket_Escalabilidad-Horizontal
+## Resumen corto (1–2 páginas)
 
-  ---
+### 1) Objetivo y alcance
 
-  ## Diagrama de componentes
+- Mostrar que 3 réplicas del `users_service` detrás de Nginx reparten carga (mode: least_conn) y que cada réplica sigue publicando eventos a RabbitMQ.
 
-  ```mermaid
-  flowchart LR
-    Cliente[Cliente\n(Browser / Postman)] --> Nginx[Nginx\n(Load Balancer)\n(least_conn)]
-    Nginx --> I1[Instancia 1\nPuerto 8000]
-    Nginx --> I2[Instancia 2\nPuerto 8001]
-    Nginx --> I3[Instancia 3\nPuerto 8002]
-  ```
+### 2) Evidencia generada
 
-  ---
+- Pruebas: flood de 30 requests a través de Nginx; respuestas incluyen `instance`.
+- Artefactos (carpeta `./artifacts`):
+  - `responses_*.json` — respuestas del flood con el campo `instance`.
+  - `logs_*/summary_*.json` — conteo por réplica de líneas relevantes.
+  - `logs_*/user-service-*.filtered.log` — líneas filtradas por réplica.
 
-  ## Informe breve (1–2 páginas)
+### 3) Mejora y observaciones
 
-  ### 1) Justificación de escalabilidad
+- Recomendado: conexiones persistentes a RabbitMQ, instrumentación (Prometheus/Grafana) y externalizar estado (Redis) para producción.
 
-  - Ventajas:
-    - Throughput: aumentar réplicas incrementa la capacidad concurrente y mejora la latencia bajo carga.
-    - Resiliencia: si una réplica falla, el balanceador redirige peticiones a réplicas sanas reduciendo el impacto en usuarios.
-    - Evolución y despliegue: los despliegues rolling o por réplica minimizan downtime.
+---
 
-  - Retos:
-    - Estado de sesión: aplicaciones que mantienen estado en memoria requieren sticky sessions o externalizar el estado (Redis, DB).
-    - Observabilidad: se necesita métricas y trazabilidad para escalar correctamente (Prometheus/Grafana, OpenTelemetry).
-    - Coordinación operativa: migraciones de esquema o cambios que no son backward-compatible exigen planificación.
+## Cómo reproducir (comandos rápidos)
 
-  ### 2) Distribución lograda (evidencia)
+PowerShell (desde la raíz del repo):
 
-  - Prueba realizada: se enviaron 30 solicitudes POST (flood) a través de Nginx. Las respuestas incluyen el campo `instance` que indica qué réplica atendió cada petición.
-  - Artefactos generados (carpeta `./artifacts`):
-    - `responses_*.json` — respuestas del flood con el campo `instance`.
-    - `logs_*/summary_*.json` — conteo por réplica de las entradas relevantes (por ejemplo 10/10/10 o 19/19/19 según la ejecución).
-    - `logs_*/user-service-*.filtered.log` — líneas filtradas que muestran `Usuario creado localmente` y `Evento UsuarioCreado publicado` por réplica.
+```powershell
+# Levantar la demo (intentar desde una ruta sin espacios si Docker en Windows falla)
+docker compose -f docker-compose.taller6.yml up --build -d
 
-  Estos archivos son la evidencia que el balanceador repartió tráfico entre las instancias y que cada réplica procesó y publicó los eventos al broker.
+# Ejecutar flood y guardar respuestas
+.\scripts\collect_demo.ps1 -Count 30 -Url http://localhost/users
 
-  ### 3) Mejoras futuras (prioridad)
+# Extraer logs filtrados y summary
+.\scripts\extract_logs.ps1 -Tail 500 -OutDir .\artifacts
 
-  1. Reusar conexiones a RabbitMQ (long-lived) para reducir overhead por petición y mejorar rendimiento.
-  2. Instrumentación completa (Prometheus + Grafana) y configuración de autoscaling horizontal basada en métricas.
-  3. Externalizar estado (Redis) para evitar la necesidad de sticky sessions.
-  4. Realizar pruebas de carga más exhaustivas (wrk, vegeta) y análisis p99/p999 de latencia.
+# Crear ZIP con evidencias (opcional)
+.\scripts\make_artifacts_zip.ps1 -ArtifactsDir .\artifacts -OutDir .\artifacts
+```
 
-  ---
+Visualización rápida de evidencia:
 
-  ## Cómo reproducir (comandos rápidos)
+```powershell
+Get-Content .\artifacts\responses_*.json -Raw | ConvertFrom-Json | Group-Object instance
+Get-Content .\artifacts\logs_*\summary_*.json -Raw | ConvertFrom-Json
+Get-Content .\artifacts\logs_*\user-service-1.filtered.log -Tail 30
+```
 
-  PowerShell (desde la raíz del repo):
+Notas:
 
-  ```powershell
-  # Levantar la demo (intentar desde una ruta sin espacios si Docker en Windows falla)
-  docker compose -f docker-compose.taller6.yml up --build -d
+- Si `docker compose up` falla en Windows por la ruta del repo, mueve el proyecto a una ruta simple (ej. `C:\repos\EcoMarket`) o usa la alternativa manual con `docker run`.
+- Los scripts en `scripts/` están adaptados para PowerShell y generan la carpeta `./artifacts` con respuestas y logs filtrados.
 
-  # Ejecutar flood y guardar respuestas
-  .\scripts\collect_demo.ps1 -Count 30 -Url http://localhost/users
+---
 
-  # Extraer logs filtrados y summary
-  .\scripts\extract_logs.ps1 -Tail 500 -OutDir .\artifacts
+## Artefactos y video
 
-  # Crear ZIP con evidencias (opcional)
-  .\scripts\make_artifacts_zip.ps1 -ArtifactsDir .\artifacts -OutDir .\artifacts
-  ```
+- Artefactos: carpeta `./artifacts` (responses JSON, logs filtrados y summary JSON).
+- Video E2E: coloca `docs/video_e2e.mp4` o pega el enlace aquí.
 
-  Visualización rápida de evidencia:
-
-  ```powershell
-  Get-Content .\artifacts\responses_*.json -Raw | ConvertFrom-Json | Group-Object instance
-  Get-Content .\artifacts\logs_*\summary_*.json -Raw | ConvertFrom-Json
-  Get-Content .\artifacts\logs_*\user-service-1.filtered.log -Tail 30
-  ```
-
-  Notas importantes:
-
-  - Si `docker compose up` falla en Windows por rutas con espacios/caracteres no-ASCII, prueba mover el repo a una ruta simple (ej. `C:\repos\EcoMarket`) o usar la alternativa manual con `docker run`.
-  - Los scripts en `scripts/` están adaptados para PowerShell y generan la carpeta `./artifacts` con respuestas y logs filtrados.
-
-  ---
-
-  ## Artefactos y video
-
-  - Artefactos: carpeta `./artifacts` (responses JSON, logs filtrados y summary JSON).
-  ---
+---
 

@@ -18,10 +18,6 @@ Repositorio de entrega: https://github.com/AAMC98/EcoMarket_Escalabilidad-Horizo
 
 ## Diagrama de componentes
 
-![Diagrama de componentes](docs/diagram_svg_source.svg)
-
-> Si no ve la imagen arriba, genere el archivo `docs/diagram.svg` desde `docs/diagram.mmd` usando las instrucciones abajo; el bloque mermaid también está incluido para edición rápida.
-
 ```mermaid
 flowchart LR
   Cliente[Cliente\n(Browser / Postman)] --> Nginx[Nginx\n(Load Balancer)\n(least_conn)]

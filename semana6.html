@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoMarket: Escalabilidad Horizontal - Balanceo de Carga para Servicios Múltiples</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+        .phase {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .phase h2 {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .phase h2::before {
+            content: attr(data-icon);
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        .activity {
+            background: #e8f4fd;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .checkpoint {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .code-python {
+            background: #f0f0f0;
+            border-left: 4px solid #3572A5;
+        }
+        .code-csharp {
+            background: #f0f0f0;
+            border-left: 4px solid #9B4F96;
+        }
+        .code-nginx {
+            background: #f0f0f0;
+            border-left: 4px solid #A52A2A;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .tip {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .reflection {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .evolution-step {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            position: relative;
+        }
+        .evolution-step::after {
+            content: "↓";
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #e74c3c;
+        }
+        .evolution-step:last-child::after {
+            display: none;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            background: white;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .comparison-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .decision-matrix {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .ai-prompt {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .progress-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: #e9ecef;
+            margin: 0 5px;
+            border-radius: 5px;
+        }
+        .progress-item.active {
+            background: #e74c3c;
+            color: white;
+        }
+        .scenario-box {
+            background: #f0f8ff;
+            border: 1px solid #e74c3c;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .diagram {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+        .dual-lang {
+            display: flex;
+            gap: 20px;
+        }
+        .dual-lang > div {
+            flex: 1;
+        }
+        @media (max-width: 768px) {
+            .dual-lang {
+                flex-direction: column;
+            }
+        }
+    </style>
+	<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</head>
+<body>
+    <h1>EcoMarket: Escalabilidad Horizontal - Balanceo de Carga para Servicios Múltiples</h1>
+    <p>De una sola instancia a un clúster escalable: Distribuye la carga con Nginx para manejar picos de tráfico</p>
+
+    <!-- Sección de Introducción -->
+    <section id="introduccion" style="background: #f0f8ff; border-radius: 10px; padding: 20px; margin: 20px 0;">
+        <h2>🎯 Al Final de Esta Semana, Serás Capaz De:</h2>
+        <div class="checkpoint">
+            <ul>
+                <li>✅ <strong>Configurar</strong> un balanceador de carga (Nginx) para distribuir tráfico entre múltiples instancias de un servicio</li>
+                <li>✅ <strong>Implementar</strong> algoritmos básicos de balanceo (Round Robin, Least Connections)</li>
+                <li>✅ <strong>Demostrar</strong> escalabilidad: agregar instancias sin downtime</li>
+                <li>✅ <strong>Simular</strong> y recuperar de fallos de instancias (health checks)</li>
+                <li>✅ <strong>Justificar</strong> escalabilidad horizontal vs vertical (con métricas de rendimiento)</li>
+                <li>✅ <strong>Diagramar</strong> el flujo de tráfico en tu clúster distribuido</li>
+            </ul>
+        </div>
+
+        
+		<h2>📚 Lecturas / Estudio Independiente (Antes del Taller)</h2>
+<p>Prepara el terreno con estas lecturas (30-45 min):</p>
+<ul>
+    <li><a href="https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/" target="_blank">"HTTP Load Balancing with NGINX" (NGINX Docs)</a> – Enfócate en upstream y health checks.</li>
+    <li><a href="https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/linux-nginx?view=aspnetcore-9.0" target="_blank">"Load balancing with NGINX" (Microsoft Docs, 2025)</a> – Integración con .NET y ASP.NET Core.</li>
+    <li><a href="https://www.digitalocean.com/community/tutorials/how-to-configure-nginx-as-a-reverse-proxy-on-ubuntu-22-04" target="_blank">Tutorial práctico de NGINX Load Balancing (DigitalOcean)</a> – Para ver configuración simple.</li>
+</ul>
+
+        <h2>🛠️ Taller 5: Introducción de Balanceo de Carga en EcoMarket</h2>
+        <p><strong>Instrucciones (4 horas):</strong> Evoluciona tu proyecto de Semana 5 (sistema con Pub/Sub) agregando múltiples instancias del servicio de usuarios. Usa Nginx para balancear el tráfico entrante.</p>
+        <ol>
+            <li>Duplica tu servicio de usuarios (de Taller 2/4) en 2+ instancias (puertos diferentes, e.g., Docker).</li>
+            <li>Configura Nginx como proxy reverso con upstream para distribuir requests a las instancias.</li>
+            <li><strong>Opcional/Reto:</strong> Implementa health checks para detectar instancias caídas automáticamente.</li>
+            <li>Verifica escalabilidad: Agrega una tercera instancia sin reiniciar Nginx.</li>
+        </ol>
+
+        <h3>Requisitos Técnicos Mínimos</h3>
+        <ul>
+            <li>Usa Nginx (instalación local o Docker).</li>
+            <li>Define upstream: Múltiples backends (e.g., localhost:8000, localhost:8001).</li>
+            <li>Instancias validan requests distribuidos (logs por instancia).</li>
+            <li>Manejo de fallos: Health checks pasivos/activos o fail_timeout.</li>
+        </ul>
+
+        <div class="tip">
+            <h3>🔧 ¿Por Qué Nginx para Este Taller?</h3>
+            <p><strong>Para producción real, considera:</strong></p>
+            <ul>
+                <li><strong>Nginx</strong>: ✅ Elegido aquí - ligero, rápido, excelente para HTTP, gratis, ideal para aprender</li>
+                <li><strong>HAProxy</strong>: Mejor para TCP/UDP, más configurable para no-HTTP</li>
+                <li><strong>AWS ALB/ELB</strong>: Si estás en cloud, integración nativa y auto-escalado</li>
+                <li><strong>Traefik</strong>: Más dinámico con Docker/Swarm, pero curva de aprendizaje</li>
+            </ul>
+            <p><strong>Para aprender balanceo horizontal, Nginx es ideal ⭐</strong> - Balance perfecto entre simplicidad y potencia.</p>
+        </div>
+
+        <h3>📊 Esquema de Componentes Propuesto</h3>
+        <div class="diagram">
+			<div class="mermaid">
+%%{ init: { "flowchart": { "htmlLabels": true } } }%%
+graph LR
+  A["Cliente<br>(Browser/Postman)"] -->|HTTP Requests| B["Nginx<br>(Load Balancer)"]
+  B -->|Round Robin| C["Instancia 1<br>(Puerto 8000)"]
+  B -->|Least Conn| D["Instancia 2<br>(Puerto 8001)"]
+  C -->|Respuesta| B
+  D -->|Respuesta| B
+  style B fill:#d1ecf1
+  style C fill:#e8f4fd
+  style D fill:#e8f4fd
+	</div>
+            <p><em>Diagrama Mermaid: Cliente → Balancer → Múltiples Instancias independientes.</em></p>
+        </div>
+
+        <h2>📋 Entrega y Evaluación (Avance Hito 2 - 10%)</h2>
+        <ul>
+            <li><strong>Repositorio:</strong> Código con Docker Compose para Nginx + instancias (GitHub o similar).</li>
+            <li><strong>Diagrama:</strong> Flujo de tráfico (extiende el de arriba).</li>
+            <li><strong>Informe breve (1-2 páginas):</strong>
+                <ul>
+                    <li>Justificación de escalabilidad: Ventajas (throughput, resiliencia) vs retos (sesiones sticky si needed).</li>
+                    <li>Distribución lograda: Ej. requests alternados en logs de instancias.</li>
+                    <li>Mejoras futuras: Auto-scaling, métricas (e.g., con Prometheus).</li>
+                </ul>
+            </li>
+        </ul>
+        <div class="tip">
+            <strong>Tip para entrega:</strong> Incluye un README con comandos para correr (e.g., docker-compose up) y un video corto (1 min) de E2E: Flood de requests → Ver distribución en logs.
+        </div>
+
+        <h2>🤔 Cuestiones de Reflexión (Post-Taller)</h2>
+        <ol>
+            <li>¿Qué pasa si una instancia cae? ¿Cómo Nginx redirige tráfico? (Health checks, fail_timeout).</li>
+            <li>¿Cómo manejar estado en sesiones distribuidas? (Sticky sessions, Redis para shared state).</li>
+            <li>¿Consideraciones de seguridad? (SSL termination, rate limiting en balancer).</li>
+            <li>¿Cuándo evitar horizontal? (Apps stateful pesadas, costos de coordinación).</li>
+        </ol>
+        <p><strong>¡Ahora, salta al Journey de EcoMarket para la práctica guiada!</strong> <a href="#journey" style="color: #e74c3c; font-weight: bold;">Ir al Journey →</a></p>
+    </section>
+
+    <div id="journey"></div>
+
+    <div class="progress-bar">
+        <div class="progress-item active">🎯 Fase 0: El Problema Real</div>
+        <div class="progress-item">🔄 Fase 1: Evolución de Soluciones</div>
+        <div class="progress-item">💻 Fase 2: Implementando Balanceo</div>
+        <div class="progress-item">🧪 Fase 3: Validación</div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🎯">Fase 0: El Problema Real que Justifica Escalabilidad Horizontal (30 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Entender por qué una sola instancia no escala para picos de tráfico. Justifica la complejidad de balanceo con números del negocio.</p>
+
+        <h3>🪴 Escenario: Evoluciona tu Servicio de Usuarios (Integración con Semanas 1-5)</h3>
+        <p>Usa el servicio de registro de usuarios ya distribuido (de Taller 4 con Pub/Sub). Ahora, con picos de 1000+ requests/min, una sola instancia se satura.</p>
+
+        <div class="scenario-box">
+            <h4>📊 Datos Reales del Sistema Actual:</h4>
+            <ul>
+                <li><strong>Volumen:</strong> 1000 requests/min en picos de registro</li>
+                <li><strong>Instancias:</strong> 1 sola (puerto 8000)</li>
+                <li><strong>Acoplamiento actual:</strong> Todo tráfico directo a una instancia (sin distribución)</li>
+                <li><strong>Fallos:</strong> 20% de requests fallan por timeout en picos</li>
+                <li><strong>Costo de oportunidad:</strong> $10 por usuario perdido en picos no manejados</li>
+            </ul>
+        </div>
+
+        <div class="scenario-box">
+            <h4>📈 Diagrama: El Problema Actual con Instancia Única</h4>
+            <!-- Se separa el código Mermaid y el texto ASCII en contenedores distintos para evitar problemas de parsing y visualización -->
+			<div class="diagram">
+			<div class="mermaid">
+%%{ init: { "flowchart": { "htmlLabels": true } } }%%
+graph LR
+  subgraph Cliente
+    C["Clientes Multiples"]
+  end
+
+  subgraph Servicio
+    S["Instancia Unica<br>(Puerto 8000)"]
+  end
+
+  C -- "1000 req/min" --> S
+
+  S -.-> C
+  S -.-> C
+
+  %% Estilos opcionales para visibilidad
+  style S fill:#fefee0,stroke:#999,stroke-width:1px
+  style C fill:#e8f4fd
+  classDef dottedEdge stroke-dasharray: 5 5
+  linkStyle default stroke:#ff3,stroke-width:2px
+			</div>
+			</div>
+            <p><em>Diagrama Mermaid: Sobrecarga causa 20% timeouts; Caida causa 100% downtime.</em></p>
+			
+            <pre class="diagram">
+SITUACIÓN ACTUAL: INSTANCIA ÚNICA SIN BALANCEO
+┌─────────────┐    1000 req/min    ┌─────────────┐
+│ Clientes    │ ────────────────── │ Instancia   │
+│ (Picos)     │                    │ Única       │
+└─────────────┘                    └─────────────┘
+      │                                   │
+      │ Si sobrecarga:                    │ Si cae:
+      ├──X── 20% timeouts                 │ ├──X── 100% downtime
+      ├──X── Usuarios abandonan           │ ├──X── $10k/hora perdido
+      └──X── $8k/hora en conversiones     │ └──X── Sin recuperación auto
+            perdidas                      │
+
+COSTO REAL: 20% fallos × 6000 usuarios/hora × $10 = $12,000 perdidos/hora en picos
+ESCALAMIENTO: +1x tráfico = +100% latencia + 40% más fallos
+            </pre>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ Los Síntomas del Dolor</h3>
+            <p><strong>Reporte del Gerente:</strong> "En campañas de marketing, el 20% de registros fallan por lentitud del sitio."</p>
+            <p><strong>Reporte Técnico:</strong> La instancia única maneja 800 req/min max, pero picos llegan a 1000, causando 500ms+ latencia.</p>
+            <p><strong>Impacto:</strong> 20% × 6000 usuarios/hora × $10 = $120,000 perdidos en picos mensuales.</p>
+        </div>
+
+        <div class="activity">
+            <h3>🧮 Actividad: Calculando el Costo de No Escalar</h3>
+            <p><strong>Objetivo:</strong> Cuantificar por qué necesitas distribución horizontal.</p>
+            <ol>
+                <li><strong>Calcula:</strong> Con 20% fallos y 6000 usuarios/hora en picos, ¿cuánto en conversiones perdido al mes?</li>
+                <li><strong>Proyecta:</strong> Si duplicas tráfico, ¿cómo escala la latencia y fallos?</li>
+                <li><strong>Umbral:</strong> ¿A partir de qué costo mensual inviertes en balanceo?</li>
+            </ol>
+            <p><strong>Meta:</strong> Justificar escalabilidad con ROI concreto.</p>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt para IA: Análisis de Impacto de Instancia Única</h4>
+            <pre>Ayúdame a analizar el impacto de una sola instancia en mi sistema de usuarios:
+
+Contexto:
+- Requests por hora: 6000 en picos
+- Valor por usuario registrado: $10
+- Tasa de fallos actual: 20%
+- Tráfico: Creciendo 2x/mes
+- Latencia actual: 500ms en picos
+
+Preguntas:
+1. ¿Cuál es el costo mensual de fallos en picos?
+2. Si duplico tráfico, ¿cómo escala el problema?
+3. ¿A partir de qué punto la instancia única se vuelve crítica?
+4. ¿Qué costos ocultos (e.g., devops para vertical) estoy ignorando?
+
+Dame números y escenarios concretos.</pre>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint de Fase 0</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Criterio</th>
+                        <th>¿Cumple?</th>
+                        <th>Evidencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Calculé costo mensual de no escalar</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Número: $______ /mes</td>
+                    </tr>
+                    <tr>
+                        <td>Identifiqué umbral para balanceo</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Si > $______, invierto en horizontal</td>
+                    </tr>
+                    <tr>
+                        <td>Entiendo por qué vertical no escala</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Explico 2 limitaciones</td>
+                    </tr>
+                    <tr>
+                        <td>Conecté con proyecto previo (Pub/Sub)</td>
+                        <td>□ Sí / □ No</td>
+                        <td>Identifiqué patrón similar</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🔄">Fase 1: La Evolución Natural hacia Escalabilidad Horizontal (45 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Explora cómo una instancia única evoluciona a clúster balanceado, entendiendo límites de cada paso.</p>
+
+        <h3>🚀 El Evolution Journey a Balanceo de Carga</h3>
+        <p>No saltas directo a clústeres. Evolucionas cuando los picos duelen, extendiendo el monolito distribuido de Taller 4.</p>
+
+        <div class="scenario-box">
+            <h4>🔄 Diagrama: Evolution Journey - De Única a Distribuida</h4>
+			
+            <pre class="diagram">
+PASO 1: INSTANCIA ÚNICA (Actual)
+┌─────────────┐    Directo    ┌─────────────┐
+│ Clientes    │ ──────────── │ Instancia   │
+└─────────────┘               │ Única       │
+                              └─────────────┘
+    ↓ Problema: 1000 req/min satura CPU 100%
+
+PASO 2: MÚLTIPLES INSTANCIAS MANUALES (Prueba Simple)
+┌─────────────┐ ──DNS Round Robin──> ┌─────────────┐ ┌─────────────┐
+│ Clientes    │                       │ Instancia 1 │ │ Instancia 2 │
+└─────────────┘                       └─────────────┘ └─────────────┘
+    ↓ Problema: Distribución desigual + no health checks
+
+PASO 3: BALANCEADOR CENTRALIZADO (Nginx)
+┌─────────────┐ ──HTTP Proxy──> ┌─────────────┐
+│ Clientes    │                 │ Nginx LB    │ ──Round Robin──> ┌─────────────┐ ┌─────────────┐
+└─────────────┘                 └─────────────┘                   │ Instancia 1 │ │ Instancia 2 │
+                                                                  └─────────────┘ └─────────────┘
+    ↓ Solución: Distribución inteligente + failover auto
+
+DECISIÓN: ¿Vale balanceo por picos de tráfico?
+          Si >800 req/min o crecimiento → Sí
+            </pre>
+        </div>
+
+        <div class="evolution-step">
+            <h4>Paso 1: Instancia Única (Actual)</h4>
+            <p><strong>Código:</strong> Servicio en puerto fijo (8000)</p>
+            <p><strong>Funciona cuando:</strong> Bajo volumen, tráfico estable</p>
+            <p><strong>Falla cuando:</strong> Picos, saturación CPU</p>
+        </div>
+
+        <div class="evolution-step">
+            <h4>Paso 2: Múltiples Manuales</h4>
+            <p><strong>Código:</strong> Duplica servicios en puertos, DNS simple</p>
+            <p><strong>Funciona cuando:</strong> 2 instancias fijas, bajo churn</p>
+            <p><strong>Falla cuando:</strong> Instancia cae sin redirección</p>
+        </div>
+
+        <div class="evolution-step">
+            <h4>Paso 3: Nginx Load Balancer</h4>
+            <p><strong>Código:</strong> Config upstream + proxy_pass</p>
+            <p><strong>Funciona cuando:</strong> Múltiples dinámicas, health checks</p>
+            <p><strong>Nuevo costo:</strong> Gestión de config LB</p>
+        </div>
+
+        <div class="activity">
+            <h3>🧪 Actividad: Implementando y Rompiendo Cada Paso</h3>
+            <p><strong>Objetivo:</strong> Probar límites extendiendo Taller 4.</p>
+
+            <h4>Paso 2A: Múltiples Instancias Manuales (15 min)</h4>
+            <div class="dual-lang">
+                <div>
+                    <h5>Ejemplo en Python (Docker)</h5>
+                    <div class="code-block code-python">
+                        <pre># docker-compose.yml simple para 2 instancias
+services:
+  user-service-1:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - INSTANCE_ID=1
+
+  user-service-2:
+    build: .
+    ports:
+      - "8001:8000"
+    environment:
+      - INSTANCE_ID=2
+
+# En app.py: Log INSTANCE_ID en cada request</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Ejemplo en C# (Multiple Projects)</h5>
+                    <div class="code-block code-csharp">
+                        <pre>// Program.cs en cada proyecto
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IConfiguration>(cfg => 
+{
+    var instanceId = Environment.GetEnvironmentVariable("INSTANCE_ID") ?? "default";
+    Console.WriteLine($"Starting Instance {instanceId}");
+    // ...
+});</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Prueba de ruptura:</strong> Envía 100 requests. ¿Se distribuyen? Mata instancia 1. ¿Sobrevive?</p>
+
+            <div class="tip">
+                <h4>🤔 ¿Qué pasaría si...?</h4>
+                <p><strong>Escenario:</strong> Pico de tráfico:</p>
+                <ul>
+                    <li>Distribución manual desigual (DNS cache)</li>
+                    <li>Sin health: Tráfico a instancia caída</li>
+                    <li>Acoplamiento: Clientes conocen puertos</li>
+                </ul>
+            </div>
+
+            <h4>Paso 2B: DNS Round Robin (10 min)</h4>
+            <div class="dual-lang">
+                <div>
+                    <h5>Config Simple (hosts file)</h5>
+                    <div class="code-block">
+                        <pre># /etc/hosts (simula DNS)
+127.0.0.1 ecousers.local
+127.0.0.1 ecousers.local  # Duplicado para round robin</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>En C# Client</h5>
+                    <div class="code-block code-csharp">
+                        <pre>var client = new HttpClient();
+var response = await client.GetAsync("http://ecousers.local:80/users");</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Prueba de ruptura:</strong> ¿Distribución consistente? ¿Maneja fallos?</p>
+        </div>
+
+        <div class="decision-matrix">
+            <h3>📊 Matriz de Decisión: ¿Cuándo usar qué?</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Solución</th>
+                        <th>Complejidad</th>
+                        <th>Funciona hasta</th>
+                        <th>Falla cuando</th>
+                        <th>Costo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Instancia Única</strong></td>
+                        <td>Muy Baja</td>
+                        <td>500 req/min, estable</td>
+                        <td>Picos >800 req/min</td>
+                        <td>Bajo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Múltiples Manuales</strong></td>
+                        <td>Baja</td>
+                        <td>2-3 instancias fijas</td>
+                        <td>Instancias caen</td>
+                        <td>Bajo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Nginx LB</strong></td>
+                        <td>Media</td>
+                        <td>10+ instancias, picos</td>
+                        <td>Config compleja para stateful</td>
+                        <td>Medio</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cloud LB (ALB)</strong></td>
+                        <td>Alta</td>
+                        <td>Auto-scaling dinámico</td>
+                        <td>Sobreingeniería para local</td>
+                        <td>Alto</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt para IA: Análisis de Alternativas Escalabilidad</h4>
+            <pre>Analiza alternativas para escalar horizontalmente en EcoMarket:
+
+Contexto:
+- Requests: 1000/min picos a 3 servicios
+- Volumen: 6000/hora, creciendo 2x
+- Tolerancia: <5% fallos
+- Equipo: 2 devs, Docker en uso
+
+Alternativas:
+1. Instancia única vertical
+2. Múltiples manuales
+3. Nginx LB
+4. Cloud ALB
+
+Evalúa:
+- ¿Cumple actuales?
+- ¿Escala crecimiento?
+- Esfuerzo implementación?
+- Problemas operacionales?
+- ¿Cuándo migrar?
+
+Recomienda para AHORA y upgrade path.</pre>
+        </div>
+
+        <div class="reflection">
+            <h3>🤔 Momento de Decisión</h3>
+            <p><strong>Pregunta equipo:</strong> "¿En qué punto del journey estamos forzados a balanceo?"</p>
+            <p><strong>Datos:</strong> Costo fallos $X/hora, tiempo impl., complejidad manejable, crecimiento.</p>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint de Fase 1</h3>
+            <ul>
+                <li>Implementé/probé 2 pasos previos</li>
+                <li>Entiendo límites de cada uno</li>
+                <li>Justificación cuantitativa para LB</li>
+                <li>Explico por qué no es overkill</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="💻">Fase 2: Implementando Balanceo de Carga con Propósito (60 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Implementa Nginx upstream sabiendo qué problema resuelve: Distribución para picos. Integra con servicios de Taller 4. Ejemplos en config Nginx y Docker para continuidad.</p>
+
+        <div class="tip">
+            <h3>💡 Contexto</h3>
+            <p>Implementas LB porque:</p>
+            <ul>
+                <li>1 entrada → N instancias sin saturación</li>
+                <li>Escalabilidad: Agregar instancias sin cambiar clientes</li>
+                <li>Resiliencia: Fallo en una no afecta total</li>
+                <li>ROI: Reduce latencia 500ms → 100ms + $120k/mes saved</li>
+            </ul>
+        </div>
+
+        <div class="activity">
+            <h3>🎬 Demo Rápida (5 minutos - Hazlo AHORA)</h3>
+            <p><strong>Antes de entender todo el código, veamos que funciona:</strong></p>
+            
+            <ol>
+                <li>Inicia 2 instancias + Nginx: <code>docker-compose up -d</code></li>
+                <li>En terminal, flood requests: <code>for i in {1..10}; do curl http://localhost/users; done</code></li>
+                <li>Checa logs: <code>docker logs user-service-1</code> y <code>docker logs user-service-2</code></li>
+                <li><strong>Observa:</strong> Requests alternados en logs de ambas instancias:
+                    <div class="code-block">
+                        <pre>Instancia 1: Request #1,3,5,7,9
+Instancia 2: Request #2,4,6,8,10</pre>
+                    </div>
+                </li>
+            </ol>
+            
+            <div class="checkpoint">
+                <p><strong>¡Acabas de ver balanceo en acción!</strong> Tráfico distribuido automáticamente. Ahora entendamos el código...</p>
+            </div>
+        </div>
+
+        <h3>🗂️ Arquitectura con Load Balancer</h3>
+
+        <div class="scenario-box">
+            <h4>🎯 Diagrama: Arquitectura LB - Justificada</h4>
+            <pre class="diagram">
+ARQUITECTURA CON LB PARA ESCALABILIDAD DE USUARIOS
+
+┌─────────────────┐                 ┌──────────────────────────────┐
+│ CLIENTE         │                 │          NGINX LB            │
+│ (Browser)       │                 │                              │
+│                 │ ──HTTP─────→    │  ┌──────────────────────┐    │
+│ 1. Request      │   (proxy_pass)  │  │ upstream users {     │        │
+│    distribuido  │                 │  │   server 8000;       │ ──RR──→ [Instancia 1]
+│    (100ms)      │                 │  │   server 8001;       │        │
+│                 │                 │  │   least_conn;        │ ──LC──→ [Instancia 2]
+│ 2. Health check │                 │  │ }                    │        │
+│    pasivo       │                 │  └──────────────────────┘        │
+└─────────────────┘                 └──────────────────────────────┘
+      │                                                              │
+      │ Garantía: Request SIEMPRE responde                           │
+      │ por distribución                                            │
+      │                                          ┌─────────────────────────┐
+      │                                          │    SERVICIOS            │
+      └───────────── DESACOPLAMIENTO ───────────│                         │
+                                                 │ 1. Instancias stateless │
+                                                 │    • Logs por ID        │
+                                                 │    • Pub/Sub integrado  │
+                                                 │                         │
+                                                 │ 2. Health checks        │
+                                                 │    • fail_timeout 10s   │
+                                                 │    • max_fails 3        │
+                                                 │                         │
+                                                 │ 3. Escalable            │
+                                                 │    • Agregar sin down   │
+                                                 │    • Métricas básicas   │
+                                                 └─────────────────────────┘
+
+BENEFICIOS ESPECÍFICOS OBTENIDOS:
+✅ Throughput: 800 → 1600 req/min (2x mejora)
+✅ Disponibilidad: 99% → 99.9% (10x mejora)  
+✅ Fallos picos: 20% → 1% (20x mejora)
+✅ Escalabilidad: 1 instancia → N instancias
+● Costo nuevo: Config LB + monitoreo
+            </pre>
+        </div>
+
+        <div class="activity">
+            <h3>🔄 Integración con tu Código de Semana 4</h3>
+            <p><strong>Si ya tienes este servicio (de Taller 4):</strong></p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Código Actual (Python)</h5>
+                    <div class="code-block code-python">
+                        <pre>from fastapi import FastAPI
+app = FastAPI()
+
+@app.get("/users")
+async def get_users():
+    return {"message": "Users list"}</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Código Actual (C#)</h5>
+                    <div class="code-block code-csharp">
+                        <pre>[ApiController]
+[Route("[controller]")]
+public class UsersController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult GetUsers()
+    {
+        return Ok(new { Message = "Users list" });
+    }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Duplícalo así (Docker):</strong></p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Docker para Instancias (Python)</h5>
+                    <div class="code-block code-python">
+                        <pre># Dockerfile
+FROM python:3.9
+COPY . /app
+WORKDIR /app
+RUN pip install fastapi uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# En cada instancia: Agrega log de request</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Docker para Instancias (C#)</h5>
+                    <div class="code-block code-csharp">
+                        <pre># Dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:6.0
+COPY . /app
+WORKDIR /app
+ENTRYPOINT ["dotnet", "UserService.dll"]
+
+# En controller: Agrega log</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip">
+                <p><strong>Nota:</strong> Instancias stateless, Pub/Sub maneja eventos async.</p>
+            </div>
+        </div>
+
+        <div class="activity">
+            <h3>🚀 Actividad: Implementación Progresiva en 3 Niveles</h3>
+            <p><strong>Objetivo:</strong> Construir desde lo simple a lo robusto, entendiendo cada capa.</p>
+
+            <h4>Nivel 1: Upstream Mínimo Viable (15 min)</h4>
+            <p><strong>Objetivo:</strong> Que funcione con lo esencial - ver distribución básica</p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Nginx Config - Nivel 1 Simple</h5>
+                    <div class="code-block code-nginx">
+                        <pre>http {
+    upstream users_backend {
+        server localhost:8000;
+        server localhost:8001;
+    }
+
+    server {
+        listen 80;
+        location / {
+            proxy_pass http://users_backend;
+        }
+    }
+}</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Docker Compose</h5>
+                    <div class="code-block">
+                        <pre>services:
+  nginx:
+    image: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+  user-service-1:
+    # ...
+  user-service-2:
+    # ...</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkpoint">
+                <p><strong>Prueba Nivel 1:</strong> Curl a localhost. ¿Alterna entre 8000/8001? ✅ Siguiente nivel.</p>
+            </div>
+
+            <h4>Nivel 2: Algoritmos y Health Básico (15 min)</h4>
+            <p><strong>Objetivo:</strong> Distribución inteligente + detección simple de fallos</p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Nginx Config - Nivel 2 con Algos</h5>
+                    <div class="code-block code-nginx">
+                        <pre>upstream users_backend {
+    least_conn;  # ⬅️ NUEVO: Least connections
+    server localhost:8000 max_fails=3 fail_timeout=30s;
+    server localhost:8001 max_fails=3 fail_timeout=30s;
+}</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Prueba con Ab (Apache Benchmark)</h5>
+                    <div class="code-block">
+                        <pre>ab -n 100 -c 10 http://localhost/users  # Checa distribución</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkpoint">
+                <p><strong>Prueba Nivel 2:</strong> Mata instancia 1. ¿Tráfico va solo a 2? Reinicia. ¿Recupera? ✅</p>
+            </div>
+
+            <h4>Nivel 3: Health Checks Activos y Logs (15 min)</h4>
+            <p><strong>Objetivo:</strong> Monitoreo proactivo + métricas</p>
+            
+            <div class="dual-lang">
+                <div>
+                    <h5>Nginx Config - Nivel 3 Robusto</h5>
+                    <div class="code-block code-nginx">
+                        <pre>upstream users_backend {
+    zone users_backend 64k;  # ⬅️ NOTA: Requiere Nginx Plus (comercial)
+    server localhost:8000 max_fails=3 fail_timeout=10s;
+    server localhost:8001 max_fails=3 fail_timeout=10s;
+    keepalive 32;  # Persistent connections
+}
+
+server {
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+    }
+    location / {
+        proxy_pass http://users_backend;
+        proxy_set_header Host $host;
+        health_check interval=5 fails=3 passes=2 uri=/health;  # ⬅️ Nginx Plus only
+    }
+}</pre>
+                    </div>
+                    <div class="warning">
+                        <p><strong>⚠️ Nota Importante:</strong> Las directivas <code>zone</code> y <code>health_check</code> (activos) solo están disponibles en <strong>Nginx Plus</strong> (versión comercial).</p>
+                        <p><strong>Para Nginx Open Source (gratuito):</strong> Usa health checks <em>pasivos</em> con <code>max_fails</code> y <code>fail_timeout</code> (ya incluidos en Nivel 2).</p>
+                    </div>
+                </div>
+                <div>
+                    <h5>En Instancias: Health Endpoint</h5>
+                    <div class="code-block code-python">
+                        <pre>@app.get("/health")
+async def health():
+    return {"status": "healthy"}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkpoint">
+                <p><strong>Prueba Nivel 3:</strong> Simula fallo (return 500 en /health). ¿Nginx detecta y redirige? ✅</p>
+            </div>
+
+            <div class="tip">
+                <p><strong>¿Por qué 3 niveles?</strong> Cada nivel agrega inteligencia. Para aprender, empieza simple y agrega cuando entiendas por qué la necesitas.</p>
+            </div>
+        </div>
+
+        <div class="activity">
+            <h3>📥 Agregar Instancias Dinámicas (30 min)</h3>
+            <p><strong>Objetivo:</strong> Demostrar escalabilidad agregando sin downtime.</p>
+
+            <h4>Instancia 3 (Reto)</h4>
+            <div class="dual-lang">
+                <div>
+                    <h5>Docker Compose Extendido</h5>
+                    <div class="code-block">
+                        <pre>  user-service-3:
+    build: .
+    ports:
+      - "8002:8000"
+    environment:
+      - INSTANCE_ID=3</pre>
+                    </div>
+                </div>
+                <div>
+                    <h5>Actualiza Nginx.conf</h5>
+                    <div class="code-block code-nginx">
+                        <pre>upstream users_backend {
+    # ...
+    server localhost:8002 max_fails=3 fail_timeout=10s;
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Ejecuta:</strong> <code>docker-compose up -d user-service-3</code> y reload Nginx (<code>nginx -s reload</code>).</p>
+        </div>
+
+        <div class="tip">
+            <h4>🚀 Reto: Métricas con Stub_status</h4>
+            <p>Agrega location /nginx_status para ver active conns, requests.</p>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt para IA: Revisión LB</h4>
+            <pre>Revisa mi impl. de Load Balancer con Nginx:
+
+Código: [pegar arriba]
+
+Contexto:
+- Requests 1000/min a 3 instancias
+- Volumen 6000/hora → 12000/hora
+- <5% fallos
+- Equipo pequeño
+
+Evalúa:
+1. ¿Garantiza distribución equitativa?
+2. ¿Qué si instancia reinicia con tráfico?
+3. ¿Maneja sticky sessions si needed?
+4. ¿Escala volumen?
+5. Problemas operacionales?
+6. Configs faltantes?
+
+Por problema: Por qué importante, manifestación prod, código fix.</pre>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint de Fase 2</h3>
+            <ul>
+                <li>Nginx con upstream configurado</li>
+                <li>Algoritmos (RR/Least Conn) y health checks</li>
+                <li>Instancias Docker, logs distribuidos</li>
+                <li>Integré con mi código de Semana 4</li>
+                <li>Explico configs (upstream=distribución, health=resiliencia)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🧪">Fase 3: Validación y Pruebas de Distribución (30 min)</h2>
+        <p><strong>Objetivo de Aprendizaje:</strong> Demuestra que LB resuelve saturación del Fase 0, con E2E y fallos.</p>
+
+        <div class="activity">
+            <h3>🔥 Pruebas de Tráfico Distribuido</h3>
+            <p><strong>Objetivo:</strong> Verificar flujo E2E y resiliencia.</p>
+
+            <div class="scenario-box">
+                <h4>⚡ Diagrama: Flujo de Validación con Manejo de Errores</h4>
+                <!-- Se separa el código Mermaid y el texto ASCII en contenedores distintos -->
+                <div class="diagram">
+                <div class="mermaid">
+%%{ init: { "flowchart": { "htmlLabels": true } } }%%
+graph TB
+    A["Cliente: Requests Multiples"] -->|proxy_pass| B["Nginx LB"]
+    B -->|"RR o Least Conn"| C["Instancia 1"]
+    B -->|"RR o Least Conn"| D["Instancia 2"]
+    C -->|"Respuesta/Health"| B
+    D -->|"Respuesta/Health"| B
+    
+    C -->|"Fail max_fails"| E["Marked Down"]
+    B -.->|"Redirige"| D
+    
+    D -->|"Up Again"| B
+    B -->|"Recupera"| C
+    
+    style E fill:#f9d0d0
+    style C fill:#d0f9d0
+    style D fill:#d0f9d0
+                </div>
+                </div>
+                <pre class="diagram">
+PRUEBA 1: DISTRIBUCIÓN DURANTE FLOOD
+┌─────────┐ requests     ┌─────────────┐ flood       ┌─────────────┐
+│Cliente  │ ────────→    │ Nginx LB    │ ──────→     │ Instancias  │
+│(Ab)     │              │ (upstream)  │             │ (8000+8001) │
+└─────────┘              └─────────────┘             └─────────────┘
+                                  │                             │
+                                  ▼                             ▼
+                           [Requests alternados]      [Logs: 50/50 split]
+                                  │                             │
+                                  │                        ┌─────────┐ ┌─────────┐
+                                  │                        │1: 50 req│ │2: 50 req│
+                                  │                        └─────────┘ └─────────┘ ✅
+VALIDACIÓN: ¿Distribución equitativa? 
+
+PRUEBA 2: RESILIENCIA INSTANCIA (Fallo + Recovery)
+┌─────────┐ requests     ┌─────────────┐ consume     ┌─────────┐
+│Cliente  │ ────────→    │ Nginx LB    │ ────────→   │Instancia│
+└─────────┘              └─────────────┘              │1 (crash)│ ❌
+                                  │                             │
+                                  ▼                             ▼
+                           [Tráfico a Instancia 2]   [Health fail → down]
+                                  │                             │
+                                  ▼                             ▼
+                           ┌─────────────┐                ┌─────────┐
+                           │ Nginx LB    │ ────────→      │Instancia│
+                           │ (redirige)  │                │1(restart)│ ✅
+                           └─────────────┘                └─────────┘
+VALIDACIÓN: ¿Otros requests no afectados? ¿Recupera auto?
+
+RESULTADO: ESCALABILIDAD VALIDADA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Distribución equitativa   ✅ Instancias independientes
+✅ Recovery automático       ✅ Sin impacto en cliente
+✅ Escalabilidad probada     ✅ ROI: Throughput ↑2x
+                </pre>
+            </div>
+
+            <h4>Prueba 1: E2E Distribución (10 min)</h4>
+            <ol>
+                <li>Inicia stack: <code>docker-compose up -d</code></li>
+                <li>Flood: <code>ab -n 100 -c 5 http://localhost/users</code></li>
+                <li><strong>Esperado:</strong> Logs ~50/50 en instancias</li>
+            </ol>
+
+            <h4>Prueba 2: Fallo en Instancia + Recovery (10 min)</h4>
+            <ol>
+                <li>Flood requests</li>
+                <li>Mata instancia 1: <code>docker stop user-service-1</code></li>
+                <li>Continúa flood</li>
+                <li>Reinicia: <code>docker start user-service-1</code></li>
+                <li><strong>Esperado:</strong> Tráfico redirigido; recupera tras health pass</li>
+            </ol>
+
+            <h4>Prueba 3: Agregar Instancia sin Downtime (10 min)</h4>
+            <div class="activity">
+                <p><strong>Objetivo:</strong> Demostrar escalabilidad total.</p>
+                <ol>
+                    <li>Sin detener nada, agrega user-service-3 en docker-compose</li>
+                    <li>Up: <code>docker-compose up -d user-service-3</code></li>
+                    <li>Reload Nginx: <code>docker exec nginx nginx -s reload</code></li>
+                    <li>Flood nuevo</li>
+                    <li><strong>Esperado:</strong> 3 instancias ~33% cada una sin interrupción</li>
+                </ol>
+                <div class="checkpoint">
+                    <p><strong>¡Esto es escalabilidad!</strong> Agregas capacidad sin tocar clientes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="reflection">
+            <h3>📊 Métricas de Validación</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Métrica</th>
+                        <th>Instancia Única</th>
+                        <th>Con LB</th>
+                        <th>Mejora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Throughput por pico</td>
+                        <td>800 req/min</td>
+                        <td>1600 req/min (2 instancias)</td>
+                        <td>2x más capacidad</td>
+                    </tr>
+                    <tr>
+                        <td>Latencia media</td>
+                        <td>500ms</td>
+                        <td>100ms</td>
+                        <td>80% más rápido</td>
+                    </tr>
+                    <tr>
+                        <td>Fallos en picos</td>
+                        <td>20%</td>
+                        <td><1%</td>
+                        <td>20x más confiable</td>
+                    </tr>
+                    <tr>
+                        <td>Esfuerzo agregar instancia</td>
+                        <td>Reinicio total</td>
+                        <td>Config + reload</td>
+                        <td>5x más simple</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tip">
+            <h3>🎯 ROI Demostrado</h3>
+            <ul>
+                <li><strong>Antes:</strong> $12,000/hora en picos perdidos</li>
+                <li><strong>Después:</strong> $0 perdidos, capacidad escala lineal</li>
+                <li><strong>Costo impl.:</strong> ~20 horas</li>
+                <li><strong>Payback:</strong> Primer pico manejado</li>
+            </ul>
+        </div>
+
+        <div class="checkpoint">
+            <h3>✅ Checkpoint Final</h3>
+            <ul>
+                <li>Pruebas de carga pasaron</li>
+                <li>ROI cuantificado vs anterior</li>
+                <li>Demostré escalabilidad agregando instancia</li>
+                <li>Entiendo nuevos problemas (e.g., bottleneck DB) y monitoreo</li>
+                <li>Plan para Avance Hito 2: Integrar en clúster básico</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase">
+        <h2 data-icon="🚀">Reflexión Final: El Verdadero Aprendizaje</h2>
+        
+        <div class="reflection">
+            <h3>🤔 Preguntas Profundas</h3>
+            <ol>
+                <li><strong>Evolución:</strong> ¿Por qué paso a paso vs directo a cloud?</li>
+                <li><strong>Complejidad:</strong> ¿Cuándo LB vale vs costo?</li>
+                <li><strong>Patrones:</strong> ¿Otros problemas en trabajo con este journey?</li>
+                <li><strong>Arquitectura:</strong> ¿Cambios si startup vs enterprise?</li>
+            </ol>
+        </div>
+
+        <div class="ai-prompt">
+            <h4>🤖 Prompt Final: Síntesis</h4>
+            <pre>Sintetiza mi aprendizaje en decisiones arquitectónicas:
+
+Journey:
+1. Empecé: [Instancia única]
+2. Problemas: [20% fallos, $X/hora]
+3. Alternativas: [manuales, Nginx]
+4. Elegí: [LB] por [razones]
+5. Impl. con: [health checks]
+6. Validé: [distribución]
+
+Reflexiones:
+1. Principios generales?
+2. Balance complejidad-beneficio?
+3. Preguntas pre-adopción?
+4. Comunicación a stakeholders?
+
+Framework reusable para futuras decisiones.</pre>
+        </div>
+        
+        <div class="decision-matrix">
+            <h4>📋 Framework Mental (Ejemplo):</h4>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Principio</th>
+                        <th>Pregunta Guía</th>
+                        <th>Ejemplo EcoMarket</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Cuantificar Saturación</strong></td>
+                        <td>¿$X/hora por picos?</td>
+                        <td>$12k/hora fallos → $360k/mes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Evaluar Distribución</strong></td>
+                        <td>¿Escala N instancias?</td>
+                        <td>Nginx OK now, ALB for cloud</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Validar ROI</strong></td>
+                        <td>¿Payback <1 pico?</td>
+                        <td>Sí, throughput ↑2x paga impl.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Incremental</strong></td>
+                        <td>¿Probar PoC?</td>
+                        <td>Empecé manual, evolucioné a LB</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Medir Impacto</strong></td>
+                        <td>¿Cumple promesas?</td>
+                        <td>80% → 99% uptime empírica</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><em>Transferible a: APIs, web servers, microservicios, etc.</em></p>
+        </div>
+
+        <div class="tip">
+            <h3>🎓 Valor Real</h3>
+            <p>Aprendiste:</p>
+            <ul>
+                <li><strong>Metodología:</strong> Evolucionar infra incrementalmente</li>
+                <li><strong>Justificación:</strong> Cuantificar escalabilidad con ROI</li>
+                <li><strong>Impl.:</strong> LB con health y algoritmos de producción</li>
+                <li><strong>Validación:</strong> Probar distribución con cargas reales</li>
+            </ul>
+            <p><strong>Para Avance Hito 2:</strong> Integra este LB en tu sistema escalable.</p>
+        </div>
+    </div>
+
+    <p style="text-align: center; margin-top: 30px;">
+        🎉 ¡Felicitaciones! Ahora dominas Escalabilidad Horizontal: No solo cómo, sino cuándo y por qué en sistemas distribuidos.
+    </p>
+</body>
+</html>

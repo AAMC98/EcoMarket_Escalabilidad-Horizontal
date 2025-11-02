@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 def get_connection_params():
     """Construye ConnectionParameters leyendo variables de entorno con valores por defecto."""
-    host = os.environ.get('RABBIT_HOST', 'localhost')
+    # In Docker Compose the RabbitMQ service is reachable via the service name 'rabbitmq'
+    host = os.environ.get('RABBIT_HOST', 'rabbitmq')
     port = int(os.environ.get('RABBIT_PORT', '5672'))
     user = os.environ.get('RABBIT_USER', 'ecomarket_user')
     password = os.environ.get('RABBIT_PASS', 'ecomarket_password')
@@ -29,7 +30,7 @@ def get_connection_params():
     )
 
 
-def publish_user_created(user_data: Dict[str, Any], max_retries: int = 3, backoff_seconds: float = 1.0) -> bool:
+def publish_user_created(user_data: Dict[str, Any], max_retries: int = 5, backoff_seconds: float = 1.5) -> bool:
     """Publica un evento UsuarioCreado al exchange 'user_events'.
 
     Retorna True si el publish fue exitoso, False si falló después de reintentos.

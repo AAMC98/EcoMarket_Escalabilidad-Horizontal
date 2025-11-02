@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\zexka\Documents\UAN\Programacion Distribuida del Lado Servidor\EcoMarket_PubSub\.venv311
+set VIRTUAL_ENV=D:\UAN\Programacion Distribuida del Lado Servidor\EcoMarket Escalabilidad Horizontal - Balanceo de Carga para Servicios Múltiples\.venv311
 
 if not defined PROMPT set PROMPT=$P$G
 

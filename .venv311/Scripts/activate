@@ -35,7 +35,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\zexka\Documents\UAN\Programacion Distribuida del Lado Servidor\EcoMarket_PubSub\.venv311"
+VIRTUAL_ENV="D:\UAN\Programacion Distribuida del Lado Servidor\EcoMarket Escalabilidad Horizontal - Balanceo de Carga para Servicios Múltiples\.venv311"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

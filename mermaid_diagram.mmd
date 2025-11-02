@@ -1,0 +1,19 @@
+flowchart LR
+  subgraph Cliente
+    A[Browser / Postman]
+  end
+  subgraph Balancer
+    B[Nginx\n(least_conn / round_robin options)]
+  end
+  subgraph Instancias
+    I1[Instancia 1\nPuerto 8000]
+    I2[Instancia 2\nPuerto 8001]
+    I3[Instancia 3\nPuerto 8002]
+  end
+
+  A --> B
+  B --> I1
+  B --> I2
+  B --> I3
+
+  click B "./nginx/nginx.conf" "Nginx config"

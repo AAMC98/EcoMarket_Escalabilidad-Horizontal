@@ -1,4 +1,3 @@
-````markdown
 # EcoMarket — Escalabilidad Horizontal (Semana 6)
 
 Este repositorio contiene la entrega parcial del Hito 2 (10%) enfocada en escalabilidad horizontal del `users_service` usando Nginx como balanceador y RabbitMQ como broker (cuando aplica). Se ha probado una configuración con 3 réplicas del servicio detrás de Nginx y se generó evidencia (respuestas, logs y un video E2E).
@@ -60,7 +59,7 @@ Nota: el diagrama en Mermaid se ha retirado para evitar confusión; si lo desea,
 
 ---
 
-## Resumen corto (1–2 páginas)
+## Resumen corto
 
 ### Objetivo y alcance
 
@@ -107,6 +106,3 @@ Get-Content .\artifacts\logs_*\user-service-1.filtered.log -Tail 30
 ```
 
 ---
-
-Si quiere que vuelva a intentar incluir el diagrama como imagen, dígame y lo rehacemos con un enfoque más controlado (generar SVG localmente y subir el archivo SVG).
-

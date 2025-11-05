@@ -8,7 +8,7 @@ Este repositorio contiene la entrega parcial del Hito 2 (10%) enfocada en escala
 
 ```mermaid
 flowchart LR
-  Cliente[Cliente (Browser / Postman)] --> Nginx[Nginx (Load Balancer, least_conn)]
+  Cliente[Cliente - Browser o Postman] --> Nginx[Nginx - Load Balancer: least_conn]
   Nginx --> I1[Instancia 1 - Puerto 8000]
   Nginx --> I2[Instancia 2 - Puerto 8001]
   Nginx --> I3[Instancia 3 - Puerto 8002]

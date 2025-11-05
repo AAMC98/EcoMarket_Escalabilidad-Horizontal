@@ -2,27 +2,16 @@
 
 Este repositorio contiene la entrega parcial del Hito 2 (10%) enfocada en escalabilidad horizontal del `users_service` usando Nginx como balanceador y RabbitMQ como broker (cuando aplica). Se ha probado una configuración con 3 réplicas del servicio detrás de Nginx y se generó evidencia (respuestas, logs y un video E2E).
 
-Repositorio de entrega: https://github.com/AAMC98/EcoMarket_Escalabilidad-Horizontal
-
----
-
-## Informe breve (1–2 páginas) — Resumen para el docente
-# EcoMarket — Semana 6: Escalabilidad Horizontal y Balanceo de Carga
-
-Este repositorio contiene la entrega (avance) para la Semana 6 centrada en escalabilidad horizontal del `users_service` mediante Nginx como balanceador. El objetivo de la práctica fue mostrar que varias réplicas del servicio pueden atender tráfico en paralelo y publicar eventos a RabbitMQ sin downtime.
-
-Repositorio de entrega: https://github.com/AAMC98/EcoMarket_Escalabilidad-Horizontal
-
 ---
 
 ## Diagrama de componentes
 
 ```mermaid
 flowchart LR
-  Cliente[Cliente\n(Browser / Postman)] --> Nginx[Nginx\n(Load Balancer)\n(least_conn)]
-  Nginx --> I1[Instancia 1\nPuerto 8000]
-  Nginx --> I2[Instancia 2\nPuerto 8001]
-  Nginx --> I3[Instancia 3\nPuerto 8002]
+  Cliente[Cliente (Browser / Postman)] --> Nginx[Nginx (Load Balancer, least_conn)]
+  Nginx --> I1[Instancia 1 - Puerto 8000]
+  Nginx --> I2[Instancia 2 - Puerto 8001]
+  Nginx --> I3[Instancia 3 - Puerto 8002]
 ```
 
 ---
